@@ -8,11 +8,54 @@ import { useRealtimeAnnouncements } from '@/hooks/useRealtimeAnnouncements';
 import StudentDashboard from '@/components/StudentDashboard';
 import { Class, Timetable, TimetableEntry, TimetableOverride, Announcement } from '@flowtime/types';
 import { resolveScheduleForDate } from '@flowtime/timetable-core';
-import { Layers, AlertCircle, Calendar, Sun, Moon, Monitor, Instagram, Megaphone, Globe } from 'lucide-react';
+import { Layers, AlertCircle, Calendar, Sun, Moon, Monitor, Instagram, Megaphone, Globe, Download } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentHomePage() {
   const { selectedClassId, changeClassId, theme, changeTheme, loading: prefLoading } = usePreferences();
+
+  // PWA installation state
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the default browser mini-infobar
+      e.preventDefault();
+      // Save event for later trigger
+      setDeferredPrompt(e);
+      // Show install option in UI
+      setShowInstallBtn(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // If app is already installed/running in standalone mode
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone
+    ) {
+      setShowInstallBtn(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    // Trigger prompt
+    deferredPrompt.prompt();
+    
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA installation outcome: ${outcome}`);
+    
+    // Clear deferred prompt
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
 
   // 0. Telemetry tracking
   React.useEffect(() => {
@@ -165,6 +208,18 @@ export default function StudentHomePage() {
                   ))}
                 </select>
               </div>
+            )}
+            
+            {/* Install PWA App Button */}
+            {showInstallBtn && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-button shadow-xs cursor-pointer transition-colors"
+                title="Install Flowtime App"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Install App
+              </button>
             )}
             {/* Theme Toggle Button */}
             <button
