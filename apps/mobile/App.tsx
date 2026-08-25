@@ -16,6 +16,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './src/lib/supabase';
 import { Class, TimetableEntry, Announcement } from '@flowtime/types';
+import * as Notifications from 'expo-notifications';
 import { 
   Home, 
   Calendar as CalendarIcon, 
@@ -35,6 +36,14 @@ type TabName = 'dashboard' | 'timetable' | 'settings' | 'admin';
 type ThemeMode = 'light' | 'dark' | 'system';
 
 LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   // Navigation & Preferences State
@@ -288,6 +297,75 @@ export default function App() {
 
   useEffect(() => {
     refreshData();
+  }, [selectedClassId]);
+
+  // A. Register for Notifications Permissions and Setup (Android Channel Support)
+  useEffect(() => {
+    async function registerForPushNotificationsAsync() {
+      try {
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#3B82F6',
+          });
+        }
+
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+          console.log('Failed to get permissions for notifications!');
+          return;
+        }
+      } catch (e) {
+        console.log('Error registering for notifications:', e);
+      }
+    }
+
+    registerForPushNotificationsAsync();
+  }, []);
+
+  // B. Subscribe to Real-Time Announcements for Foreground Local Push Notifications
+  useEffect(() => {
+    const channel = supabase
+      .channel('mobile-announcements-notifications-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'announcements' },
+        async (payload) => {
+          const newNotice = payload.new as Announcement;
+          
+          // Show local heads-up push notification if global or class matches
+          if (!newNotice.class_id || newNotice.class_id === selectedClassId) {
+            try {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: `📢 New Notice: ${newNotice.title}`,
+                  body: newNotice.content,
+                  data: { noticeId: newNotice.id },
+                },
+                trigger: null, // trigger immediately
+              });
+            } catch (e) {
+              // Fallback to RN alert dialog if push fails
+              Alert.alert(`📢 New Notice: ${newNotice.title}`, newNotice.content);
+            }
+            
+            // Re-fetch data to reflect in UI
+            refreshData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedClassId]);
 
   // 5. Math logic for dashboard countdown

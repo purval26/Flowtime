@@ -4,12 +4,17 @@
     "slug": "flowtime-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.purval.flowtimemobile"
+      "package": "com.purval.flowtimemobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0F19"
+      }
     },
     "web": {},
     "extra": {
