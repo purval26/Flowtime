@@ -8,7 +8,14 @@
     "ios": {
       "supportsTablet": true
     },
-    "android": {},
-    "web": {}
+    "android": {
+      "package": "com.purval.flowtimemobile"
+    },
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "e791f91e-9f25-4080-8992-7c275fd7113a"
+      }
+    }
   }
 }
