@@ -3,7 +3,9 @@ const PRECACHE_ASSETS = [
   '/',
   '/timetable',
   '/manifest.json',
-  '/icon.svg'
+  '/icon.svg',
+  '/icon-192.jpg',
+  '/icon-512.jpg'
 ];
 
 // On install, pre-cache static shell assets
