@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#2563EB"/>
+  <!-- Clock Circle -->
+  <circle cx="256" cy="256" r="140" stroke="#FFFFFF" stroke-width="24" fill="none"/>
+  <!-- Clock Hands -->
+  <line x1="256" y1="256" x2="256" y2="160" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="330" y2="256" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+  <!-- Pulse lines around clock -->
+  <path d="M 170 380 Q 256 420 342 380" stroke="#93C5FD" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M 190 120 Q 256 90 322 120" stroke="#93C5FD" stroke-width="16" stroke-linecap="round" fill="none"/>
+</svg>
