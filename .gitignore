@@ -48,3 +48,24 @@ Thumbs.db
 db.properties
 Desktop.ini
 .DS_Store
+
+# React Native - Android
+apps/mobile/android/
+apps/mobile/ios/
+
+# React Native - Metro / Babel
+apps/mobile/metro.config.js
+apps/mobile/babel.config.js
+
+# Assets generated at build time
+apps/mobile/assets/app/
+
+# Firebase service account keys (never commit)
+*.json.key
+flowtime-*-firebase-adminsdk-*.json
+
+# Package lockfiles (using pnpm, npm lock is redundant)
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+

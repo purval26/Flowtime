@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@flowtime/types": "workspace:*"
+    "@flowtime/types": "*"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

@@ -3,7 +3,6 @@ import {
   StyleSheet, 
   Text, 
   View, 
-  SafeAreaView,
   TouchableOpacity, 
   ScrollView, 
   ActivityIndicator, 
@@ -11,12 +10,23 @@ import {
   StatusBar,
   useColorScheme,
   LogBox,
-  Alert
+  Alert,
+  RefreshControl
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './src/lib/supabase';
+import { 
+  getMessaging, 
+  getToken, 
+  requestPermission, 
+  subscribeToTopic, 
+  unsubscribeFromTopic, 
+  onMessage,
+  AuthorizationStatus 
+} from '@react-native-firebase/messaging';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { Class, TimetableEntry, Announcement } from '@flowtime/types';
-import * as Notifications from 'expo-notifications';
 import { 
   Home, 
   Calendar as CalendarIcon, 
@@ -31,25 +41,59 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import TimetableScreen from './src/screens/TimetableScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import OnBoarding from './src/screens/OnBoarding';
+import AnnouncementScreen from './src/screens/AnnouncementScreen';
 
 type TabName = 'dashboard' | 'timetable' | 'settings' | 'admin';
 type ThemeMode = 'light' | 'dark' | 'system';
 
+const ACCENT_COLORS = {
+  indigo: {
+    label: 'Indigo (Default)',
+    light: { accent: '#5E59E6', accentSoft: '#EEF2FF' },
+    dark: { accent: '#818CF8', accentSoft: '#312E81' }
+  },
+  emerald: {
+    label: 'Emerald Green',
+    light: { accent: '#10B981', accentSoft: '#D1FAE5' },
+    dark: { accent: '#34D399', accentSoft: '#064E3B' }
+  },
+  orange: {
+    label: 'Sunset Orange',
+    light: { accent: '#F97316', accentSoft: '#FFEDD5' },
+    dark: { accent: '#FB923C', accentSoft: '#7C2D12' }
+  },
+  crimson: {
+    label: 'Crimson Red',
+    light: { accent: '#E11D48', accentSoft: '#FFE4E6' },
+    dark: { accent: '#FB7185', accentSoft: '#881337' }
+  },
+  violet: {
+    label: 'Amethyst Violet',
+    light: { accent: '#8B5CF6', accentSoft: '#EDE9FE' },
+    dark: { accent: '#A78BFA', accentSoft: '#4C1D95' }
+  }
+};
+
 LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+const firebaseAnalytics = getAnalytics();
+const firebaseMessaging = getMessaging();
 
 export default function App() {
   // Navigation & Preferences State
   const [activeTab, setActiveTab] = useState<TabName>('dashboard');
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+  const [accentColor, setAccentColor] = useState<keyof typeof ACCENT_COLORS>('indigo');
+  const [showAdminTabOverride, setShowAdminTabOverride] = useState(false);
+  const [settingsHeaderTaps, setSettingsHeaderTaps] = useState(0);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
+  const [userName, setUserName] = useState<string>('');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>([]);
+  const [isViewingAnnouncements, setIsViewingAnnouncements] = useState(false);
   const systemColorScheme = useColorScheme();
 
   // Timetable layout mode: single day vs weekly grid matrix
@@ -72,42 +116,46 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
-  // Time tracker for active countdowns
+  // Time tracker for active countdowns (Fixed to Monday, Aug 24, 2026 at 11:15:00 for UI styling)
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Weekday tabs for Timetable View
-  const [timetableDay, setTimetableDay] = useState(new Date().getDay() === 0 ? 7 : new Date().getDay());
+  // Weekday tabs for Timetable View (Default to today's weekday on opening)
+  const [timetableDay, setTimetableDay] = useState(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 1 : day; // Default Sunday (0) to Monday (1)
+  });
 
   // Dynamic Theme Colors Resolution
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');
+  const activeAccent = ACCENT_COLORS[accentColor] || ACCENT_COLORS.indigo;
   const colors = isDark ? {
-    background: '#0B0F19',
-    surface: '#151B2C',
-    border: '#1F2937',
-    textPrimary: '#F3F4F6',
-    textSecondary: '#9CA3AF',
-    textMuted: '#4B5563',
-    accent: '#3B82F6',
-    accentSoft: '#1E293B',
-    success: '#22C55E',
-    successSoft: '#14532D',
-    danger: '#EF4444',
+    background: '#0F172A',
+    surface: '#1E293B',
+    border: '#334155',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#94A3B8',
+    textMuted: '#64748B',
+    accent: activeAccent.dark.accent,
+    accentSoft: activeAccent.dark.accentSoft,
+    success: '#34D399', // Green/Teal for Dark Mode
+    successSoft: '#064E3B',
+    danger: '#F87171',
     dangerSoft: '#7F1D1D',
     cardShadow: '#000000',
   } : {
-    background: '#F7F8FA',
-    surface: '#FFFFFF',
+    background: '#F3F4F6', // Off-white background as shown in image
+    surface: '#FFFFFF',    // Pure white cards as shown in image
     border: '#E5E7EB',
-    textPrimary: '#111827',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
-    accent: '#2563EB',
-    accentSoft: '#EFF6FF',
-    success: '#16A34A',
-    successSoft: '#F0FDF4',
-    danger: '#DC2626',
-    dangerSoft: '#FEF2F2',
-    cardShadow: '#E2E8F0',
+    textPrimary: '#1E293B',
+    textSecondary: '#64748B',
+    textMuted: '#94A3B8',
+    accent: activeAccent.light.accent,
+    accentSoft: activeAccent.light.accentSoft,
+    success: '#10B981', // Emerald green for LIVE dot and checkmarks
+    successSoft: '#D1FAE5', // Soft green bg
+    danger: '#EF4444',
+    dangerSoft: '#FEE2E2',
+    cardShadow: '#E5E7EB',
   };
 
   // Check user role in Supabase user_roles table matching web hook
@@ -150,10 +198,31 @@ export default function App() {
       try {
         const savedClassId = await AsyncStorage.getItem('flowtime_selected_class_id');
         const savedTheme = await AsyncStorage.getItem('flowtime_theme') as ThemeMode | null;
+        const savedAccent = await AsyncStorage.getItem('flowtime_accent_color');
+        const savedName = await AsyncStorage.getItem('flowtime_user_name');
+        const onboarded = await AsyncStorage.getItem('flowtime_has_onboarded');
+        const savedNotifications = await AsyncStorage.getItem('flowtime_notifications_enabled');
+        const savedReadIds = await AsyncStorage.getItem('flowtime_read_announcements');
+
         if (savedClassId) setSelectedClassId(savedClassId);
         if (savedTheme) setThemeMode(savedTheme);
+        if (savedAccent && savedAccent in ACCENT_COLORS) {
+          setAccentColor(savedAccent as keyof typeof ACCENT_COLORS);
+        }
+        if (savedName) setUserName(savedName);
+        setHasOnboarded(onboarded === 'true');
+        
+        if (savedNotifications !== null) {
+          setNotificationsEnabled(savedNotifications === 'true');
+        }
+        if (savedReadIds) {
+          setReadAnnouncementIds(JSON.parse(savedReadIds));
+        }
       } catch (e) {
         console.log('Failed loading cache preferences:', e);
+        setHasOnboarded(false);
+      } finally {
+        setPreferencesLoaded(true);
       }
     }
     loadPreferences();
@@ -172,7 +241,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 2. Real-time timer ticker
+  // 2. Real-time timer ticker (Disabled for static visual editing)
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -186,6 +255,8 @@ export default function App() {
         platform: 'mobile',
         metadata: metadata
       });
+      // Mirror to Firebase Analytics
+      await logEvent(firebaseAnalytics, type, metadata);
     } catch (e) {
       // Fail silently for telemetry
     }
@@ -196,9 +267,17 @@ export default function App() {
     logTelemetry('page_view', { tab: activeTab });
   }, [activeTab]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshData(true);
+    setRefreshing(false);
+  };
+
   // 4. Fetch / Cache Timetable & Announcements
-  const refreshData = async () => {
-    setLoading(true);
+  const refreshData = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       // A. Fetch Classes
       const { data: classData, error: classErr } = await supabase
@@ -296,41 +375,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    refreshData();
-  }, [selectedClassId]);
-
-  // A. Register for Notifications Permissions and Setup (Android Channel Support)
-  useEffect(() => {
-    async function registerForPushNotificationsAsync() {
-      try {
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#3B82F6',
-          });
-        }
-
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-          console.log('Failed to get permissions for notifications!');
-          return;
-        }
-      } catch (e) {
-        console.log('Error registering for notifications:', e);
-      }
+    if (preferencesLoaded) {
+      refreshData();
     }
+  }, [selectedClassId, preferencesLoaded]);
 
-    registerForPushNotificationsAsync();
-  }, []);
-
-  // B. Subscribe to Real-Time Announcements for Foreground Local Push Notifications
+  // Subscribe to Real-Time Announcements for Foreground local Alerts
   useEffect(() => {
     const channel = supabase
       .channel('mobile-announcements-notifications-channel')
@@ -340,24 +390,9 @@ export default function App() {
         async (payload) => {
           const newNotice = payload.new as Announcement;
           
-          // Show local heads-up push notification if global or class matches
+          // Re-fetch data silently to reflect in UI unread counters
           if (!newNotice.class_id || newNotice.class_id === selectedClassId) {
-            try {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `📢 New Notice: ${newNotice.title}`,
-                  body: newNotice.content,
-                  data: { noticeId: newNotice.id },
-                },
-                trigger: null, // trigger immediately
-              });
-            } catch (e) {
-              // Fallback to RN alert dialog if push fails
-              Alert.alert(`📢 New Notice: ${newNotice.title}`, newNotice.content);
-            }
-            
-            // Re-fetch data to reflect in UI
-            refreshData();
+            refreshData(true);
           }
         }
       )
@@ -367,6 +402,55 @@ export default function App() {
       supabase.removeChannel(channel);
     };
   }, [selectedClassId]);
+
+  // Subscribe to Firebase Cloud Messaging (FCM) push notifications
+  useEffect(() => {
+    const setupFCM = async () => {
+      try {
+        const authStatus = await requestPermission(firebaseMessaging);
+        const enabled =
+          authStatus === AuthorizationStatus.AUTHORIZED ||
+          authStatus === AuthorizationStatus.PROVISIONAL;
+
+        if (enabled) {
+          const token = await getToken(firebaseMessaging);
+          console.log('FCM Device Token:', token);
+          logTelemetry('fcm_token_registered', { token });
+
+          // Subscribe to global topic
+          await subscribeToTopic(firebaseMessaging, 'announcements');
+
+          // Handle selected class subscriptions dynamically
+          if (selectedClassId) {
+            const lastClassId = await AsyncStorage.getItem('flowtime_last_subscribed_class_id');
+            if (lastClassId && lastClassId !== selectedClassId) {
+              await unsubscribeFromTopic(firebaseMessaging, `class_${lastClassId}`);
+            }
+            await subscribeToTopic(firebaseMessaging, `class_${selectedClassId}`);
+            await AsyncStorage.setItem('flowtime_last_subscribed_class_id', selectedClassId);
+          }
+        }
+      } catch (e) {
+        console.log('Error requesting FCM permissions:', e);
+      }
+    };
+
+    if (notificationsEnabled) {
+      setupFCM();
+    }
+
+    // Listen to foreground notifications
+    const unsubscribeFCM = onMessage(firebaseMessaging, async (remoteMessage) => {
+      if (notificationsEnabled) {
+        // Silently refresh the cached state to update the unread counters and badge in real-time
+        refreshData(true);
+      }
+    });
+
+    return () => {
+      unsubscribeFCM();
+    };
+  }, [notificationsEnabled, selectedClassId]);
 
   // 5. Math logic for dashboard countdown
   const selectedClassDetails = classes.find((c) => c.id === selectedClassId);
@@ -455,6 +539,9 @@ export default function App() {
     if (hours < 17) return 'Good afternoon';
     return 'Good evening';
   };
+  const getUserName = () => {
+    return userName || 'Purval';
+  };
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -490,6 +577,43 @@ export default function App() {
     await AsyncStorage.setItem('flowtime_theme', mode);
     logTelemetry('theme_toggled', { theme: mode });
   };
+
+  // Handle Accent Toggle
+  const handleAccentChange = async (newAccent: keyof typeof ACCENT_COLORS) => {
+    setAccentColor(newAccent);
+    await AsyncStorage.setItem('flowtime_accent_color', newAccent);
+    logTelemetry('accent_color_changed', { accent: newAccent });
+  };
+
+  // Handle Easter Egg settings header tap
+  const handleSettingsHeaderTap = () => {
+    setSettingsHeaderTaps((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setShowAdminTabOverride(true);
+        Alert.alert('🔑 Admin Portal Unlocked', 'You can now access the Admin tab in the navigation bar!');
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  // Handle Notifications Toggle
+  const handleToggleNotifications = async (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    await AsyncStorage.setItem('flowtime_notifications_enabled', enabled ? 'true' : 'false');
+    logTelemetry('notifications_toggled', { enabled });
+  };
+
+  // Open Announcements View and clear read state
+  const handleOpenAnnouncements = async () => {
+    setIsViewingAnnouncements(true);
+    const allIds = announcements.map(a => a.id);
+    setReadAnnouncementIds(allIds);
+    await AsyncStorage.setItem('flowtime_read_announcements', JSON.stringify(allIds));
+  };
+
+  const unreadCount = announcements.filter(a => !readAnnouncementIds.includes(a.id)).length;
 
   // Handle Admin Portal Sign In
   const handleAdminSignIn = async () => {
@@ -554,7 +678,7 @@ export default function App() {
       flex: 1,
       backgroundColor: colors.background,
       // SafeArea top padding fix for Android devices
-      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+      // paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
     },
     header: {
       height: 60,
@@ -593,147 +717,231 @@ export default function App() {
     },
     content: {
       flex: 1,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingTop: 8
     },
     tabBar: {
-      height: 64,
-      backgroundColor: colors.surface,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      position: 'absolute',
+      bottom: Platform.OS === 'ios' ? 28 : 20,
+      left: 16,
+      right: 16,
+      height: 68,
+      backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      borderRadius: 34,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
-      paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      elevation: 8,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
     },
     tabButton: {
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 24,
     },
     tabText: {
       fontSize: 10,
       fontWeight: '600',
-      marginTop: 4,
+      marginTop: 2,
     }
   });
 
+  if (hasOnboarded === null) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={dynamicStyles.container}>
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+            <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  if (!hasOnboarded) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={dynamicStyles.container}>
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+          <OnBoarding
+            colors={colors}
+            themeMode={themeMode}
+            handleThemeChange={handleThemeChange}
+            onComplete={(name) => {
+              setUserName(name);
+              setHasOnboarded(true);
+            }}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  if (isViewingAnnouncements) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={dynamicStyles.container}>
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+          <AnnouncementScreen
+            announcements={announcements}
+            readIds={readAnnouncementIds}
+            colors={colors}
+            isDark={isDark}
+            onBack={() => setIsViewingAnnouncements(false)}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
-    <SafeAreaView style={dynamicStyles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
-      
-      {/* App Header */}
-      <View style={dynamicStyles.header}>
-        <View>
-          <Text style={dynamicStyles.headerTitle}>Flowtime</Text>
-          {selectedClassDetails && (
-            <Text style={dynamicStyles.headerSubtitle}>
-              {selectedClassDetails.name} ({selectedClassDetails.section})
-            </Text>
-          )}
+    <SafeAreaProvider>
+      <SafeAreaView style={dynamicStyles.container}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.surface} />
+        
+        {/* Offline Status indicator */}
+        {offline && (
+          <View style={dynamicStyles.offlineBanner}>
+            <CloudOff size={12} color={colors.danger} />
+            <Text style={dynamicStyles.offlineText}>OFFLINE MODE — LOADING LOCAL SCHEDULE CACHE</Text>
+          </View>
+        )}
+
+        {/* Main Tab Renderings */}
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        ) : (
+          <ScrollView 
+            style={dynamicStyles.content}
+            contentContainerStyle={{ paddingBottom: 110 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[colors.accent]}
+                tintColor={colors.accent}
+                progressBackgroundColor={colors.surface}
+              />
+            }
+          >
+            {activeTab === 'dashboard' && (
+              <DashboardScreen
+                currentTime={currentTime}
+                announcements={announcements}
+                todaySchedule={todaySchedule}
+                activeLecture={activeLecture}
+                nextLecture={nextLecture}
+                colors={colors}
+                isDark={isDark}
+                getGreeting={getGreeting}
+                getUserName={getUserName}
+                formattedDate={formattedDate}
+                getFormattedRemainingTime={getFormattedRemainingTime}
+                getFormattedTimeUntilNext={getFormattedTimeUntilNext}
+                getProgressBarPercentage={getProgressBarPercentage}
+                getClassStatus={getClassStatus}
+                unreadCount={unreadCount}
+                onOpenAnnouncements={handleOpenAnnouncements}
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            )}
+
+            {activeTab === 'timetable' && (
+              <TimetableScreen
+                timetableMode={timetableMode}
+                setTimetableMode={setTimetableMode}
+                timetableDay={timetableDay}
+                setTimetableDay={setTimetableDay}
+                entries={entries}
+                colors={colors}
+                isDark={isDark}
+                sortedTimeSlots={sortedTimeSlots}
+                currentTime={currentTime}
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsScreen
+                classes={classes}
+                selectedClassId={selectedClassId}
+                handleClassChange={handleClassChange}
+                themeMode={themeMode}
+                handleThemeChange={handleThemeChange}
+                colors={colors}
+                notificationsEnabled={notificationsEnabled}
+                handleToggleNotifications={handleToggleNotifications}
+                accentColor={accentColor}
+                handleAccentChange={handleAccentChange}
+                accentColorsList={ACCENT_COLORS}
+                onHeaderTap={handleSettingsHeaderTap}
+              />
+            )}
+
+            {activeTab === 'admin' && (
+              <AdminScreen
+                isAdmin={isAdmin}
+                adminEmail={adminEmail}
+                setAdminEmail={setAdminEmail}
+                adminPassword={adminPassword}
+                setAdminPassword={setAdminPassword}
+                authLoading={authLoading}
+                handleAdminSignIn={handleAdminSignIn}
+                handleAdminSignOut={handleAdminSignOut}
+                classes={classes}
+                stats={stats}
+                colors={colors}
+                isDark={isDark}
+              />
+            )}
+          </ScrollView>
+        )}
+
+        {/* Tab Navigation Bar */}
+        <View style={dynamicStyles.tabBar}>
+          {[
+            { key: 'dashboard', name: 'Dashboard', icon: Home },
+            { key: 'timetable', name: 'Timetable', icon: CalendarIcon },
+            ...((isAdmin || showAdminTabOverride) ? [{ key: 'admin', name: 'Admin', icon: Shield }] : []),
+            { key: 'settings', name: 'Settings', icon: SettingsIcon },
+          ].map((tab) => {
+            const isActive = activeTab === tab.key;
+            const TabIcon = tab.icon;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key as TabName)}
+                style={[
+                  dynamicStyles.tabButton,
+                  isActive && {
+                    backgroundColor: isDark ? `${colors.accent}26` : `${colors.accent}1A`,
+                  }
+                ]}
+              >
+                <TabIcon size={20} color={isActive ? colors.accent : colors.textSecondary} />
+                <Text style={[dynamicStyles.tabText, { color: isActive ? colors.accent : colors.textSecondary }]}>
+                  {tab.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        <Layers size={20} color={colors.accent} />
-      </View>
-
-      {/* Offline Status indicator */}
-      {offline && (
-        <View style={dynamicStyles.offlineBanner}>
-          <CloudOff size={12} color={colors.danger} />
-          <Text style={dynamicStyles.offlineText}>OFFLINE MODE — LOADING LOCAL SCHEDULE CACHE</Text>
-        </View>
-      )}
-
-      {/* Main Tab Renderings */}
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      ) : (
-        <ScrollView style={dynamicStyles.content}>
-          {activeTab === 'dashboard' && (
-            <DashboardScreen
-              currentTime={currentTime}
-              announcements={announcements}
-              todaySchedule={todaySchedule}
-              activeLecture={activeLecture}
-              nextLecture={nextLecture}
-              colors={colors}
-              isDark={isDark}
-              getGreeting={getGreeting}
-              formattedDate={formattedDate}
-              getFormattedRemainingTime={getFormattedRemainingTime}
-              getFormattedTimeUntilNext={getFormattedTimeUntilNext}
-              getProgressBarPercentage={getProgressBarPercentage}
-              getClassStatus={getClassStatus}
-            />
-          )}
-
-          {activeTab === 'timetable' && (
-            <TimetableScreen
-              timetableMode={timetableMode}
-              setTimetableMode={setTimetableMode}
-              timetableDay={timetableDay}
-              setTimetableDay={setTimetableDay}
-              entries={entries}
-              colors={colors}
-              isDark={isDark}
-              sortedTimeSlots={sortedTimeSlots}
-            />
-          )}
-
-          {activeTab === 'settings' && (
-            <SettingsScreen
-              classes={classes}
-              selectedClassId={selectedClassId}
-              handleClassChange={handleClassChange}
-              themeMode={themeMode}
-              handleThemeChange={handleThemeChange}
-              colors={colors}
-            />
-          )}
-
-          {activeTab === 'admin' && (
-            <AdminScreen
-              isAdmin={isAdmin}
-              adminEmail={adminEmail}
-              setAdminEmail={setAdminEmail}
-              adminPassword={adminPassword}
-              setAdminPassword={setAdminPassword}
-              authLoading={authLoading}
-              handleAdminSignIn={handleAdminSignIn}
-              handleAdminSignOut={handleAdminSignOut}
-              classes={classes}
-              stats={stats}
-              colors={colors}
-              isDark={isDark}
-            />
-          )}
-        </ScrollView>
-      )}
-
-      {/* Tab Navigation Bar */}
-      <View style={dynamicStyles.tabBar}>
-        {[
-          { key: 'dashboard', name: 'Dashboard', icon: Home },
-          { key: 'timetable', name: 'Timetable', icon: CalendarIcon },
-          { key: 'admin', name: 'Admin', icon: Shield },
-          { key: 'settings', name: 'Settings', icon: SettingsIcon },
-        ].map((tab) => {
-          const isActive = activeTab === tab.key;
-          const TabIcon = tab.icon;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key as TabName)}
-              style={dynamicStyles.tabButton}
-            >
-              <TabIcon size={22} color={isActive ? colors.accent : colors.textSecondary} />
-              <Text style={[dynamicStyles.tabText, { color: isActive ? colors.accent : colors.textSecondary }]}>
-                {tab.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

@@ -3,23 +3,28 @@
   "version": "1.0.0",
   "private": true,
   "description": "Flowtime - Personal Schedule Application Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev:web": "pnpm --filter web dev",
-    "build:web": "pnpm --filter web build",
-    "start:web": "pnpm --filter web start",
-    "android:mobile": "pnpm --filter mobile android",
-    "ios:mobile": "pnpm --filter mobile ios",
-    "start:mobile": "pnpm --filter mobile start",
+    "dev:web": "npm run dev -w web",
+    "build:web": "npm run build -w web",
+    "start:web": "npm run start -w web",
+    "android:mobile": "npm run android -w @flowtime/mobile",
+    "ios:mobile": "npm run ios -w @flowtime/mobile",
+    "start:mobile": "npm run start -w @flowtime/mobile",
     "supabase:init": "supabase init",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "sharp": "^0.35.4",
     "supabase": "^1.192.5"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=18.0.0"
   }
 }

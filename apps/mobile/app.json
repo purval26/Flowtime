@@ -1,26 +1,4 @@
 {
-  "expo": {
-    "name": "Flowtime",
-    "slug": "flowtime-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "package": "com.purval.flowtimemobile",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0B0F19"
-      }
-    },
-    "web": {},
-    "extra": {
-      "eas": {
-        "projectId": "e791f91e-9f25-4080-8992-7c275fd7113a"
-      }
-    }
-  }
+  "name": "FlowtimeMobile",
+  "displayName": "FlowtimeMobile"
 }
