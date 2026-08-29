@@ -352,14 +352,18 @@ export default function WeeklyTimetablePage() {
                       return (
                         <div 
                           key={entry.id} 
-                          className={`p-6 flex items-start justify-between gap-4 transition-colors ${
+                          className={`p-5 transition-colors ${
                             isBreak ? 'bg-amber-50/20' : 'hover:bg-background/25'
                           }`}
                         >
-                          <div className="space-y-2 flex-1 min-w-0">
-                            {/* Badge / Type */}
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          <div className="grid grid-cols-1 md:grid-cols-[150px_1fr_220px_150px] items-center gap-4 text-sm">
+                            {/* Column 1: Time & Type Badge */}
+                            <div className="flex flex-row md:flex-col items-center md:items-start gap-2 md:gap-1.5 shrink-0">
+                              <span className="flex items-center gap-1 font-semibold text-text-primary">
+                                <Clock className="w-4 h-4 text-text-muted shrink-0" />
+                                {entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}
+                              </span>
+                              <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                                 isBreak 
                                   ? 'bg-amber-100 text-amber-800' 
                                   : isLab 
@@ -368,51 +372,80 @@ export default function WeeklyTimetablePage() {
                               }`}>
                                 {entry.type}
                               </span>
-                              {entry.label && (
-                                <span className="text-sm font-semibold text-text-primary truncate">
-                                  {entry.label}
+                            </div>
+
+                            {/* Column 2: Subject */}
+                            <div className="min-w-0">
+                              {isBreak ? (
+                                <span className="font-semibold text-text-primary text-sm">
+                                  {entry.label || 'Break'}
                                 </span>
+                              ) : (
+                                entry.subject && (
+                                  <div className="flex items-center gap-2">
+                                    <BookOpen className="w-4 h-4 text-text-muted shrink-0" />
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-text-primary truncate" title={entry.subject.name}>
+                                        {entry.subject.name}
+                                      </p>
+                                      <p className="text-xs text-text-secondary">
+                                        {entry.subject.code}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )
                               )}
                             </div>
 
-                            {/* Main Entry Info */}
-                            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-6 text-sm text-text-secondary">
-                              <span className="flex items-center gap-1 font-semibold text-text-primary">
-                                <Clock className="w-4 h-4 text-text-muted" />
-                                {entry.start_time.slice(0, 5)} - {entry.end_time.slice(0, 5)}
-                              </span>
-
-                              {!isBreak && entry.subject && (
-                                <span className="flex items-center gap-1">
-                                  <BookOpen className="w-4 h-4 text-text-muted" />
-                                  {entry.subject.name} ({entry.subject.code})
-                                </span>
-                              )}
-
-                              {!isBreak && entry.professor && (
-                                <span className="flex items-center gap-1">
-                                  <Users className="w-4 h-4 text-text-muted" />
-                                  {entry.professor.name}
-                                  {entry.professor.short_name && ` (${entry.professor.short_name})`}
-                                </span>
-                              )}
-
-                              {entry.room && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="w-4 h-4 text-text-muted" />
-                                  {entry.room.name}
-                                  {entry.room.building && ` (${entry.room.building})`}
-                                </span>
+                            {/* Column 3: Professor */}
+                            <div className="min-w-0">
+                              {!isBreak && entry.professor ? (
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4 text-text-muted shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-text-secondary truncate" title={entry.professor.name}>
+                                      {entry.professor.name}
+                                    </p>
+                                    {entry.professor.short_name && (
+                                      <p className="text-xs text-text-muted">
+                                        ({entry.professor.short_name})
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted">-</span>
                               )}
                             </div>
 
-                            {/* Notes */}
-                            {entry.notes && (
-                              <p className="text-xs text-text-muted bg-background/50 border border-border p-2 rounded-md italic">
-                                {entry.notes}
-                              </p>
-                            )}
+                            {/* Column 4: Room */}
+                            <div className="min-w-0">
+                              {entry.room ? (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="w-4 h-4 text-text-muted shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-text-secondary truncate" title={entry.room.name}>
+                                      {entry.room.name}
+                                    </p>
+                                    {entry.room.building && (
+                                      <p className="text-xs text-text-muted truncate" title={entry.room.building}>
+                                        {entry.room.building}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-text-muted">-</span>
+                              )}
+                            </div>
                           </div>
+
+                          {/* Notes if any */}
+                          {entry.notes && (
+                            <p className="text-xs text-text-muted bg-background/50 border border-border p-2 rounded-md italic mt-3">
+                              {entry.notes}
+                            </p>
+                          )}
                         </div>
                       );
                     })

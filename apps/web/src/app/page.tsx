@@ -18,6 +18,7 @@ export default function StudentHomePage() {
   const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [showInstallDropdown, setShowInstallDropdown] = React.useState(false);
 
   React.useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -214,17 +215,50 @@ export default function StudentHomePage() {
             )}
 
             <div className="flex gap-1">
-              {/* Install PWA App Button */}
-              {showInstallBtn && (
+              {/* Install App Dropdown */}
+              <div className="relative">
                 <button
-                  onClick={handleInstallClick}
+                  onClick={() => setShowInstallDropdown(!showInstallDropdown)}
                   className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-button shadow-xs cursor-pointer transition-colors"
-                  title="Install Flowtime App"
+                  title="Install Options"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Install App
                 </button>
-              )}
+                {showInstallDropdown && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowInstallDropdown(false)}
+                    />
+                    <div className="absolute right-0 mt-1 w-52 bg-surface border border-border rounded-button shadow-lg z-20 py-1">
+                      {showInstallBtn ? (
+                        <button
+                          onClick={() => {
+                            handleInstallClick();
+                            setShowInstallDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-background transition-colors cursor-pointer"
+                        >
+                          Install this site as app
+                        </button>
+                      ) : (
+                        <div className="px-4 py-2 text-[10px] text-text-secondary border-b border-border/40">
+                          PWA Install not available
+                        </div>
+                      )}
+                      <a
+                        href="/flowtime-v1.apk"
+                        download="flowtime-v1.apk"
+                        onClick={() => setShowInstallDropdown(false)}
+                        className="block w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-background transition-colors"
+                      >
+                        Install Android App (APK) - Beta
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
               {/* Theme Toggle Button */}
               <button
                 onClick={() => {
@@ -249,20 +283,7 @@ export default function StudentHomePage() {
             </div>
           </div>
 
-          <div className='flex gap-1'>
-            {/* Install App Button */}
-            {showInstallBtn && (
-              <button
-                onClick={() => {
-                  handleInstallClick();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="md:hidden w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold p-2 rounded-button shadow-xs cursor-pointer transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Install App
-              </button>
-            )}
+          <div className='flex gap-1 md:hidden'>
             {/* Theme Selector */}
             <button
               onClick={() => {
@@ -270,7 +291,7 @@ export default function StudentHomePage() {
                 else if (theme === 'dark') changeTheme('system');
                 else changeTheme('light');
               }}
-              className="md:hidden p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+              className="p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
               title={`Theme: ${theme} (Click to toggle)`}
             >
               {theme === 'light' && <Sun className="w-4.5 h-4.5" />}
@@ -280,7 +301,7 @@ export default function StudentHomePage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+              className="p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
@@ -345,6 +366,31 @@ export default function StudentHomePage() {
                 ) : (
                   <p className="text-xs text-text-secondary">Loading classes...</p>
                 )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-border/60">
+                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Install App</span>
+                {showInstallBtn && (
+                  <button
+                    onClick={() => {
+                      handleInstallClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-semibold py-2 rounded-button shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Install this site as app
+                  </button>
+                )}
+                <a
+                  href="/flowtime-v1.apk"
+                  download="flowtime-v1.apk"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-1.5 bg-background border border-border hover:bg-surface text-text-primary text-xs font-semibold py-2 rounded-button shadow-xs transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Install Android App (APK) - Beta
+                </a>
               </div>
 
               <div className="space-y-2 pt-2 border-t border-border/60">
