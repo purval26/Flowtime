@@ -8,7 +8,7 @@ import { useRealtimeAnnouncements } from '@/hooks/useRealtimeAnnouncements';
 import StudentDashboard from '@/components/StudentDashboard';
 import { Class, Timetable, TimetableEntry, TimetableOverride, Announcement } from '@flowtime/types';
 import { resolveScheduleForDate } from '@flowtime/timetable-core';
-import { Layers, AlertCircle, Calendar, Sun, Moon, Monitor, Instagram, Megaphone, Globe, Download } from 'lucide-react';
+import { Layers, AlertCircle, Calendar, Sun, Moon, Monitor, Instagram, Megaphone, Globe, Download, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentHomePage() {
@@ -17,6 +17,7 @@ export default function StudentHomePage() {
   // PWA installation state
   const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -45,13 +46,13 @@ export default function StudentHomePage() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
+
     // Trigger prompt
     deferredPrompt.prompt();
-    
+
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`PWA installation outcome: ${outcome}`);
-    
+
     // Clear deferred prompt
     setDeferredPrompt(null);
     setShowInstallBtn(false);
@@ -99,7 +100,7 @@ export default function StudentHomePage() {
         .select('*')
         .eq('class_id', selectedClassId)
         .eq('is_active', true);
-        
+
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     },
@@ -185,12 +186,14 @@ export default function StudentHomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Header */}
-      <header className="h-16 border-b border-border bg-surface sticky top-0 z-10">
+      <header className="h-16 md:h-20 border-b border-border bg-surface sticky top-0 z-10">
         <div className="max-w-4xl mx-auto h-full px-4 flex items-center justify-between">
           <Link href="/" className="text-lg font-bold tracking-tight text-text-primary">
             Flowtime
           </Link>
-          <div className="flex items-center gap-4">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
             {/* Class Selector Dropdown */}
             {!classesLoading && classes.length > 0 && (
               <div className="flex items-center gap-1 bg-background border border-border rounded-button px-2 py-1">
@@ -209,42 +212,156 @@ export default function StudentHomePage() {
                 </select>
               </div>
             )}
-            
-            {/* Install PWA App Button */}
+
+            <div className="flex gap-1">
+              {/* Install PWA App Button */}
+              {showInstallBtn && (
+                <button
+                  onClick={handleInstallClick}
+                  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-button shadow-xs cursor-pointer transition-colors"
+                  title="Install Flowtime App"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Install App
+                </button>
+              )}
+              {/* Theme Toggle Button */}
+              <button
+                onClick={() => {
+                  if (theme === 'light') changeTheme('dark');
+                  else if (theme === 'dark') changeTheme('system');
+                  else changeTheme('light');
+                }}
+                className="p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+                title={`Theme: ${theme} (Click to toggle)`}
+              >
+                {theme === 'light' && <Sun className="w-4.5 h-4.5" />}
+                {theme === 'dark' && <Moon className="w-4.5 h-4.5" />}
+                {theme === 'system' && <Monitor className="w-4.5 h-4.5" />}
+              </button>
+
+              <Link
+                href="/admin"
+                className="text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors border border-border px-3 py-1.5 rounded-button bg-surface"
+              >
+                Admin Portal
+              </Link>
+            </div>
+          </div>
+
+          <div className='flex gap-1'>
+            {/* Install App Button */}
             {showInstallBtn && (
               <button
-                onClick={handleInstallClick}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-button shadow-xs cursor-pointer transition-colors"
-                title="Install Flowtime App"
+                onClick={() => {
+                  handleInstallClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="md:hidden w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-bold p-2 rounded-button shadow-xs cursor-pointer transition-colors"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-4 h-4" />
                 Install App
               </button>
             )}
-            {/* Theme Toggle Button */}
+            {/* Theme Selector */}
             <button
               onClick={() => {
                 if (theme === 'light') changeTheme('dark');
                 else if (theme === 'dark') changeTheme('system');
                 else changeTheme('light');
               }}
-              className="p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+              className="md:hidden p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
               title={`Theme: ${theme} (Click to toggle)`}
             >
               {theme === 'light' && <Sun className="w-4.5 h-4.5" />}
               {theme === 'dark' && <Moon className="w-4.5 h-4.5" />}
               {theme === 'system' && <Monitor className="w-4.5 h-4.5" />}
             </button>
-
-            <Link 
-              href="/admin" 
-              className="text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors border border-border px-3 py-1.5 rounded-button bg-surface"
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+              aria-label="Open menu"
             >
-              Admin Portal
-            </Link>
+              <Menu className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Sidebar Overlay & Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-fade-in"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Sidebar Content */}
+          <div className="relative w-64 max-w-xs bg-surface border-l border-border h-full p-6 flex flex-col gap-6 shadow-xl z-10 animate-slide-in-right">
+            {/* Sidebar Top: Title and Close Button */}
+            <div className="flex items-center justify-between">
+              <Link
+                href="/"
+                className="text-lg font-bold tracking-tight text-text-primary"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Flowtime
+              </Link>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 border border-border bg-surface hover:bg-background rounded-button text-text-secondary hover:text-text-primary transition-colors flex items-center justify-center cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Sidebar Items */}
+            <div className="flex flex-col gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Class</span>
+                {/* Class Selector Dropdown */}
+                {!classesLoading && classes.length > 0 ? (
+                  <div className="flex items-center gap-1 bg-background border border-border rounded-button px-2 py-2 w-full">
+                    <Layers className="w-4 h-4 text-text-secondary shrink-0" />
+                    <select
+                      value={selectedClassId || ''}
+                      onChange={(e) => {
+                        changeClassId(e.target.value || null);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="bg-transparent text-xs font-semibold text-text-primary focus:outline-none pr-1 cursor-pointer w-full"
+                    >
+                      <option value="">Select your class...</option>
+                      {classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name} - {cls.section}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-secondary">Loading classes...</p>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-border/60">
+                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Admin</span>
+                {/* Admin Portal Link */}
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full text-center text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors border border-border py-2 rounded-button bg-surface block"
+                >
+                  Admin Portal
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
@@ -339,12 +456,12 @@ export default function StudentHomePage() {
           <StudentDashboard entries={resolvedEntries} className={selectedClassDetails?.name || ''} />
         )}
       </main>
-      
+
       <footer className="py-6 text-center text-xs text-text-secondary flex items-center justify-center gap-1.5 border-t border-border mt-auto">
         <span>Made with ❤️ by</span>
-        <a 
-          href="https://instagram.com/rntxpurval" 
-          target="_blank" 
+        <a
+          href="https://instagram.com/rntxpurval"
+          target="_blank"
           rel="noopener noreferrer"
           className="font-semibold text-primary-accent hover:underline flex items-center gap-1"
         >
