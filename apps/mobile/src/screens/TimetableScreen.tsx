@@ -70,12 +70,12 @@ export default function TimetableScreen({
     },
     title: {
       fontSize: 13,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 1,
       marginBottom: 12,
-      marginTop: 8,
+      marginTop: 6,
     },
     toggleBtn: {
       paddingHorizontal: 12,
@@ -113,7 +113,7 @@ export default function TimetableScreen({
       {/* Centered Header Row */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 12, marginBottom: 16 }}>
         {/* <View style={{ width: 24 }} /> Spacing placeholder to balance the filter icon */}
-        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textPrimary }}>
+        <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>
           Timetable
         </Text>
         {/* <TouchableOpacity style={{ padding: 4 }}>
@@ -159,7 +159,7 @@ export default function TimetableScreen({
               zIndex: 1
             }}
           >
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: timetableMode === 'tabs' ? '#FFFFFF' : colors.textSecondary, textAlign:'center' }}>Single Day</Text>
+            <Text style={{ fontSize: 11, fontFamily: colors.fontFamilyBold, color: timetableMode === 'tabs' ? '#FFFFFF' : colors.textSecondary, textAlign:'center',marginTop: -2 }}>Single Day</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -173,7 +173,7 @@ export default function TimetableScreen({
               zIndex: 1
             }}
           >
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: timetableMode === 'all' ? '#FFFFFF' : colors.textSecondary }}>All Days</Text>
+            <Text style={{ fontSize: 11, fontFamily: colors.fontFamilyBold, color: timetableMode === 'all' ? '#FFFFFF' : colors.textSecondary, marginTop: -2  }}>All Days</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -201,13 +201,14 @@ export default function TimetableScreen({
                   borderColor: timetableDay === d.value ? colors.accent : colors.border,
                   marginRight: 0,
                   minWidth: 55,
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 <Text style={{
                   fontSize: 13,
-                  fontWeight: 'bold',
-                  color: timetableDay === d.value ? '#FFFFFF' : colors.textSecondary
+                  fontFamily: colors.fontFamilyBold,
+                  color: timetableDay === d.value ? '#FFFFFF' : colors.textSecondary,
+                  marginTop: -2 
                 }}>
                   {d.name}
                 </Text>
@@ -218,7 +219,7 @@ export default function TimetableScreen({
           {/* Selected Day/Date Header */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
             <Calendar size={16} color={colors.textSecondary} />
-            <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>
+            <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textPrimary ,marginTop: -2 }}>
               {getTimetableDateString()}
             </Text>
           </View>
@@ -226,7 +227,7 @@ export default function TimetableScreen({
           {/* Vertical schedule timeline */}
           {entries.filter((e) => e.day_of_week === timetableDay).length === 0 ? (
             <View style={styles.card}>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center',marginTop: -2, fontFamily: colors.fontFamily  }}>
                 No lectures scheduled for this day.
               </Text>
             </View>
@@ -263,10 +264,10 @@ export default function TimetableScreen({
 
                       {/* Left Column: Stacked start/end times */}
                       <View style={{ width: 55, alignItems: 'flex-end', paddingTop: 6 }}>
-                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: isActive ? colors.accent : colors.textPrimary }}>
+                        <Text style={{ fontSize: 11, fontFamily: colors.fontFamilyBold, color: isActive ? colors.accent : colors.textPrimary,marginTop: -2  }}>
                           {formatTimeTo12Hour(item.start_time)}
                         </Text>
-                        <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4 }}>
+                        <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 2, fontFamily: colors.fontFamily }}>
                           {formatTimeTo12Hour(item.end_time)}
                         </Text>
                       </View>
@@ -281,18 +282,18 @@ export default function TimetableScreen({
                         ]}>
                           <View style={{ flex: 1 }}>
                             <Text style={[
-                              { fontSize: 14, fontWeight: 'bold', color: isActive ? colors.accent : colors.textPrimary },
+                              { fontSize: 14, fontFamily: colors.fontFamilyBold, color: isActive ? colors.accent : colors.textPrimary, marginTop: -2  },
                               // isCompleted && { textDecorationLine: 'line-through' }
                             ]}>
                               {isBreak ? (item.label || 'Break') : (`${item.subject?.name || 'Class Event'}${item.type === 'tutorial' ? ' (T)' : ''}`)}
                             </Text>
                             {!isBreak && item.professor && (
-                              <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: colors.fontFamily }}>
                                 {item.professor.short_name || item.professor.name}
                               </Text>
                             )}
                             {!isBreak && item.room && (
-                              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, fontFamily: colors.fontFamily }}>
                                 Room {item.room.name}
                               </Text>
                             )}
@@ -305,7 +306,7 @@ export default function TimetableScreen({
                             ) : isActive ? (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                 <View style={{ backgroundColor: colors.accent, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
-                                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#FFFFFF' }}>Current</Text>
+                                  <Text style={{ fontSize: 9, fontFamily: colors.fontFamilyBold, color: '#FFFFFF', marginTop: -2 }}>Current</Text>
                                 </View>
                                 {/* <ChevronRight size={16} color={colors.accent} /> */}
                               </View>
@@ -330,24 +331,24 @@ export default function TimetableScreen({
               {/* Grid Header */}
               <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 8, backgroundColor: colors.background + '20' }}>
                 <View style={{ width: 110, padding: 4 }}>
-                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase' }}>Time Slot</Text>
+                  <Text style={{ fontSize: 9, fontFamily: colors.fontFamilyBold, color: colors.textSecondary, textTransform: 'uppercase', marginTop: -2 }}>Time Slot</Text>
                 </View>
                 {DAYS_OF_WEEK.map((day) => (
                   <View key={day.value} style={{ width: 90, padding: 4, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase' }}>{day.name}</Text>
+                    <Text style={{ fontSize: 9, fontFamily: colors.fontFamilyBold, color: colors.textSecondary, textTransform: 'uppercase', marginTop: -2 }}>{day.name}</Text>
                   </View>
                 ))}
               </View>
 
               {/* Grid Body Time Rows */}
               {sortedTimeSlots.length === 0 ? (
-                <Text style={{ padding: 20, textAlign: 'center', color: colors.textSecondary, fontStyle: 'italic', fontSize: 12 }}>No classes scheduled for the week.</Text>
+                <Text style={{ padding: 20, textAlign: 'center', color: colors.textSecondary, fontStyle: 'italic', fontSize: 12, marginTop: -2, fontFamily: colors.fontFamily }}>No classes scheduled for the week.</Text>
               ) : (
                 sortedTimeSlots.map((slot) => (
                   <View key={`${slot.start}-${slot.end}`} style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, minHeight: 65, alignItems: 'center' }}>
                     {/* Time boundary column */}
                     <View style={{ width: 110, padding: 4 }}>
-                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.textPrimary }}>
+                      <Text style={{ fontSize: 9, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>
                         {formatTimeTo12Hour(slot.start)} - {formatTimeTo12Hour(slot.end)}
                       </Text>
                     </View>
@@ -378,14 +379,14 @@ export default function TimetableScreen({
                                   width: 86,
                                 }}
                               >
-                                <Text style={{ fontSize: 7, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase' }} numberOfLines={1}>
+                                <Text style={{ fontSize: 7, fontFamily: colors.fontFamilyBold, color: colors.textSecondary, textTransform: 'uppercase', marginTop: -2 }} numberOfLines={1}>
                                   {entry.type} {entry.room ? `• 📍${entry.room.name}` : ''}
                                 </Text>
-                                <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.textPrimary, marginTop: 1 }} numberOfLines={1}>
+                                <Text style={{ fontSize: 9, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -1 }} numberOfLines={1}>
                                   {isBreak ? (entry.label || 'Break') : (entry.subject?.short_name || 'Class')}
                                 </Text>
                                 {!isBreak && entry.professor && (
-                                  <Text style={{ fontSize: 7, color: colors.textMuted, marginTop: 1 }} numberOfLines={1}>
+                                  <Text style={{ fontSize: 7, color: colors.textMuted, marginTop: -1, fontFamily: colors.fontFamily }} numberOfLines={1}>
                                     👨‍🏫 {entry.professor.short_name || entry.professor.name}
                                   </Text>
                                 )}

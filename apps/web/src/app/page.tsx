@@ -248,12 +248,12 @@ export default function StudentHomePage() {
                         </div>
                       )}
                       <a
-                        href="/flowtime-v1.apk"
-                        download="flowtime-v1.apk"
+                        href="/flowtime-v1.2.apk"
+                        download="flowtime-v1.2.apk"
                         onClick={() => setShowInstallDropdown(false)}
                         className="block w-full text-left px-4 py-2 text-xs font-semibold text-text-primary hover:bg-background transition-colors"
                       >
-                        Install Android App (APK) - Beta
+                        Install Android App (APK) - v1.2
                       </a>
                     </div>
                   </>
@@ -383,13 +383,13 @@ export default function StudentHomePage() {
                   </button>
                 )}
                 <a
-                  href="/flowtime-v1.apk"
-                  download="flowtime-v1.apk"
+                  href="/flowtime-v1.2.apk"
+                  download="flowtime-v1.2.apk"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="w-full flex items-center justify-center gap-1.5 bg-background border border-border hover:bg-surface text-text-primary text-xs font-semibold py-2 rounded-button shadow-xs transition-colors"
                 >
                   <Download className="w-4 h-4" />
-                  Install Android App (APK) - Beta
+                  Install Android App (APK) - v1.2
                 </a>
               </div>
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
+  TextInput,
   View, 
   TouchableOpacity, 
   ScrollView, 
@@ -11,7 +12,9 @@ import {
   useColorScheme,
   LogBox,
   Alert,
-  RefreshControl
+  RefreshControl,
+  BackHandler,
+  Animated
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -75,7 +78,30 @@ const ACCENT_COLORS = {
   }
 };
 
-LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
+// Set global default font family for Text and TextInput
+const defaultFont = Platform.OS === 'android' ? 'PlusJakartaSans' : 'Plus Jakarta Sans';
+try {
+  if (Text && (Text as any).defaultProps) {
+    (Text as any).defaultProps.style = [{ fontFamily: defaultFont }, (Text as any).defaultProps.style];
+  } else if (Text) {
+    (Text as any).defaultProps = { style: { fontFamily: defaultFont } };
+  }
+} catch (e) {
+  // Ignore fallback if defaultProps is read-only in newer React Native versions
+}
+
+try {
+  if (TextInput && (TextInput as any).defaultProps) {
+    (TextInput as any).defaultProps.style = [{ fontFamily: defaultFont }, (TextInput as any).defaultProps.style];
+  } else if (TextInput) {
+    (TextInput as any).defaultProps = { style: { fontFamily: defaultFont } };
+  }
+} catch (e) {
+  // Ignore fallback if defaultProps is read-only
+}
+
+// Ignore specific yellowbox warnings if any
+LogBox.ignoreLogs(['Setting a timer']);
 
 const firebaseAnalytics = getAnalytics();
 const firebaseMessaging = getMessaging();
@@ -117,6 +143,7 @@ export default function App() {
   const [offline, setOffline] = useState(false);
 
   // Time tracker for active countdowns (Fixed to Monday, Aug 24, 2026 at 11:15:00 for UI styling)
+  // const [currentTime, setCurrentTime] = useState(new Date('2026-08-25T11:50:00'));
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Weekday tabs for Timetable View (Default to today's weekday on opening)
@@ -125,9 +152,36 @@ export default function App() {
     return day === 0 ? 1 : day; // Default Sunday (0) to Monday (1)
   });
 
+  // Tab Bar Sliding Animation & Layout Width
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const activeTabAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const currentTabs = [
+      'dashboard',
+      'timetable',
+      ...((isAdmin || showAdminTabOverride) ? ['admin'] : []),
+      'settings',
+    ];
+    const targetIdx = currentTabs.indexOf(activeTab);
+    if (targetIdx !== -1) {
+      Animated.spring(activeTabAnim, {
+        toValue: targetIdx,
+        useNativeDriver: true,
+        tension: 70,
+        friction: 11,
+      }).start();
+    }
+  }, [activeTab, isAdmin, showAdminTabOverride]);
+
   // Dynamic Theme Colors Resolution
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');
   const activeAccent = ACCENT_COLORS[accentColor] || ACCENT_COLORS.indigo;
+  const fontRegular = 'PlusJakartaSans-Regular';
+  const fontBold = 'PlusJakartaSans-Bold';
+  const fontMedium = 'PlusJakartaSans-Medium';
+  const fontSemiBold = 'PlusJakartaSans-SemiBold';
+
   const colors = isDark ? {
     background: '#0F172A',
     surface: '#1E293B',
@@ -137,6 +191,10 @@ export default function App() {
     textMuted: '#64748B',
     accent: activeAccent.dark.accent,
     accentSoft: activeAccent.dark.accentSoft,
+    fontFamily: fontRegular,
+    fontFamilyBold: fontBold,
+    fontFamilyMedium: fontMedium,
+    fontFamilySemiBold: fontSemiBold,
     success: '#34D399', // Green/Teal for Dark Mode
     successSoft: '#064E3B',
     danger: '#F87171',
@@ -151,6 +209,10 @@ export default function App() {
     textMuted: '#94A3B8',
     accent: activeAccent.light.accent,
     accentSoft: activeAccent.light.accentSoft,
+    fontFamily: fontRegular,
+    fontFamilyBold: fontBold,
+    fontFamilyMedium: fontMedium,
+    fontFamilySemiBold: fontSemiBold,
     success: '#10B981', // Emerald green for LIVE dot and checkmarks
     successSoft: '#D1FAE5', // Soft green bg
     danger: '#EF4444',
@@ -240,6 +302,24 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Handle Hardware Back Button for Announcements and Tab Navigation
+  useEffect(() => {
+    const onBackPress = () => {
+      if (isViewingAnnouncements) {
+        setIsViewingAnnouncements(false);
+        return true;
+      }
+      if (activeTab !== 'dashboard') {
+        setActiveTab('dashboard');
+        return true;
+      }
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [isViewingAnnouncements, activeTab]);
 
   // 2. Real-time timer ticker (Disabled for static visual editing)
   useEffect(() => {
@@ -571,6 +651,12 @@ export default function App() {
     logTelemetry('class_selected', { class_id: id });
   };
 
+  // Handle Username Change
+  const handleUserNameChange = async (newName: string) => {
+    setUserName(newName);
+    await AsyncStorage.setItem('flowtime_user_name', newName);
+  };
+
   // Handle Theme Toggle
   const handleThemeChange = async (mode: ThemeMode) => {
     setThemeMode(mode);
@@ -692,13 +778,13 @@ export default function App() {
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
     },
     headerSubtitle: {
       fontSize: 12,
       color: colors.textSecondary,
-      fontWeight: '600',
+      fontFamily: colors.fontFamilySemiBold,
     },
     offlineBanner: {
       backgroundColor: colors.dangerSoft,
@@ -713,7 +799,7 @@ export default function App() {
     offlineText: {
       fontSize: 11,
       color: colors.danger,
-      fontWeight: '700',
+      fontFamily: colors.fontFamilyBold,
     },
     content: {
       flex: 1,
@@ -725,12 +811,11 @@ export default function App() {
       bottom: Platform.OS === 'ios' ? 28 : 20,
       left: 16,
       right: 16,
-      height: 68,
+      height: 64,
       backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-      borderRadius: 34,
+      borderRadius: 32,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-around',
       paddingHorizontal: 8,
       borderWidth: 1,
       borderColor: colors.border,
@@ -741,15 +826,16 @@ export default function App() {
       shadowRadius: 10,
     },
     tabButton: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 24,
+      paddingVertical: 6,
+      borderRadius: 26,
+      zIndex: 2,
     },
     tabText: {
       fontSize: 10,
-      fontWeight: '600',
+      fontFamily: colors.fontFamilySemiBold,
       marginTop: 2,
     }
   });
@@ -841,6 +927,7 @@ export default function App() {
               <DashboardScreen
                 currentTime={currentTime}
                 announcements={announcements}
+                readAnnouncementIds={readAnnouncementIds}
                 todaySchedule={todaySchedule}
                 activeLecture={activeLecture}
                 nextLecture={nextLecture}
@@ -878,6 +965,8 @@ export default function App() {
 
             {activeTab === 'settings' && (
               <SettingsScreen
+                userName={userName}
+                handleUserNameChange={handleUserNameChange}
                 classes={classes}
                 selectedClassId={selectedClassId}
                 handleClassChange={handleClassChange}
@@ -913,34 +1002,91 @@ export default function App() {
         )}
 
         {/* Tab Navigation Bar */}
-        <View style={dynamicStyles.tabBar}>
-          {[
+        {(() => {
+          const navigationTabs = [
             { key: 'dashboard', name: 'Dashboard', icon: Home },
             { key: 'timetable', name: 'Timetable', icon: CalendarIcon },
             ...((isAdmin || showAdminTabOverride) ? [{ key: 'admin', name: 'Admin', icon: Shield }] : []),
             { key: 'settings', name: 'Settings', icon: SettingsIcon },
-          ].map((tab) => {
-            const isActive = activeTab === tab.key;
-            const TabIcon = tab.icon;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                onPress={() => setActiveTab(tab.key as TabName)}
-                style={[
-                  dynamicStyles.tabButton,
-                  isActive && {
-                    backgroundColor: isDark ? `${colors.accent}26` : `${colors.accent}1A`,
-                  }
-                ]}
-              >
-                <TabIcon size={20} color={isActive ? colors.accent : colors.textSecondary} />
-                <Text style={[dynamicStyles.tabText, { color: isActive ? colors.accent : colors.textSecondary }]}>
-                  {tab.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          ];
+
+          const activeIndex = navigationTabs.findIndex((t) => t.key === activeTab);
+
+          return (
+            <View 
+              style={dynamicStyles.tabBar}
+              onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
+            >
+              {/* iOS 26 Active Sliding Pill Background */}
+              {tabBarWidth > 0 && (() => {
+                const innerWidth = tabBarWidth - 16; // 8px horizontal padding on each side
+                const tabItemWidth = innerWidth / navigationTabs.length;
+                const pillTranslateX = activeTabAnim.interpolate({
+                  inputRange: navigationTabs.map((_, i) => i),
+                  outputRange: navigationTabs.map((_, i) => i * tabItemWidth),
+                });
+
+                return (
+                  <Animated.View
+                    style={{
+                      position: 'absolute',
+                      left: 8,
+                      top: 6,
+                      bottom: 6,
+                      width: tabItemWidth,
+                      borderRadius: 26,
+                      backgroundColor: isDark ? `${colors.accent}33` : `${colors.accent}1F`,
+                      borderWidth: 1,
+                      borderColor: isDark ? `${colors.accent}66` : `${colors.accent}40`,
+                      transform: [{ translateX: pillTranslateX }],
+                      zIndex: 1,
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Navigation Tab Buttons */}
+              {navigationTabs.map((tab) => {
+                const isActive = activeTab === tab.key;
+                const TabIcon = tab.icon;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    onPress={() => {
+                      const targetIndex = navigationTabs.findIndex((t) => t.key === tab.key);
+                      if (targetIndex !== -1) {
+                        Animated.spring(activeTabAnim, {
+                          toValue: targetIndex,
+                          useNativeDriver: true,
+                          tension: 70,
+                          friction: 11,
+                        }).start();
+                      }
+                      setActiveTab(tab.key as TabName);
+                    }}
+                    activeOpacity={0.7}
+                    style={dynamicStyles.tabButton}
+                  >
+                    <TabIcon 
+                      size={20} 
+                      color={isActive ? colors.accent : colors.textSecondary} 
+                      fill={isActive ? colors.accent : 'none'} 
+                    />
+                    <Text style={[
+                      dynamicStyles.tabText, 
+                      { 
+                        color: isActive ? colors.accent : colors.textSecondary,
+                        fontFamily: isActive ? colors.fontFamilyBold : colors.fontFamilySemiBold
+                      }
+                    ]}>
+                      {tab.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          );
+        })()}
       </SafeAreaView>
     </SafeAreaProvider>
   );

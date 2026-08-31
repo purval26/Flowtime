@@ -123,10 +123,11 @@ export default function OnBoarding({
     },
     title: {
       fontSize: 24,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       textAlign: 'center',
       marginBottom: 12,
+      marginTop: -2
     },
     subtitle: {
       fontSize: 14,
@@ -135,6 +136,8 @@ export default function OnBoarding({
       lineHeight: 20,
       marginBottom: 32,
       paddingHorizontal: 16,
+      marginTop: -2,
+      fontFamily: colors.fontFamily
     },
     input: {
       width: '100%',
@@ -147,6 +150,7 @@ export default function OnBoarding({
       fontSize: 16,
       color: colors.textPrimary,
       marginBottom: 20,
+      fontFamily: colors.fontFamily
     },
     card: {
       width: '100%',
@@ -166,7 +170,7 @@ export default function OnBoarding({
     },
     cardLabel: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
     },
     bottomBar: {
@@ -223,7 +227,7 @@ export default function OnBoarding({
         
         {/* SLIDE 1: WELCOME & NAME INPUT */}
         <View style={styles.slide}>
-          <Text style={{ fontSize: 44, marginBottom: 16 }}>👋</Text>
+          <Text style={{ fontSize: 44, marginBottom: 16, marginTop: -2 }}>👋</Text>
           <Text style={styles.title}>Welcome to Flowtime</Text>
           <Text style={styles.subtitle}>
             Let's personalize your schedule. What should we call you in the app?
@@ -241,7 +245,7 @@ export default function OnBoarding({
 
         {/* SLIDE 2: THEME SELECTION */}
         <View style={styles.slide}>
-          <Text style={{ fontSize: 44, marginBottom: 16 }}>🎨</Text>
+          <Text style={{ fontSize: 44, marginBottom: 16, marginTop: -2 }}>🎨</Text>
           <Text style={styles.title}>Choose Your Appearance</Text>
           <Text style={styles.subtitle}>
             Select your preferred visual style. You can also customize this in Settings later.
@@ -262,7 +266,7 @@ export default function OnBoarding({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <Icon size={20} color={isSelected ? colors.accent : colors.textSecondary} />
-                  <Text style={[styles.cardLabel, isSelected && { color: colors.accent }]}>
+                  <Text style={[styles.cardLabel, isSelected && { color: colors.accent },{ marginTop: -2}]}>
                     {theme.name}
                   </Text>
                 </View>
@@ -276,7 +280,7 @@ export default function OnBoarding({
 
         {/* SLIDE 3: NOTIFICATION PERMISSIONS */}
         <View style={styles.slide}>
-          <Text style={{ fontSize: 44, marginBottom: 16 }}>🔔</Text>
+          <Text style={{ fontSize: 44, marginBottom: 16, marginTop: -2 }}>🔔</Text>
           <Text style={styles.title}>Stay in the Loop</Text>
           <Text style={styles.subtitle}>
             Get alerts before classes start, timetable updates, and broadcasts from your section.
@@ -294,13 +298,13 @@ export default function OnBoarding({
               <Bell size={24} color={permissionStatus === 'granted' ? colors.accent : colors.textSecondary} />
               <Text style={[
                 styles.cardLabel, 
-                { fontSize: 16 },
+                { fontSize: 16 , marginTop: -2},
                 permissionStatus === 'granted' && { color: colors.accent }
               ]}>
                 {permissionStatus === 'granted' ? 'Notifications Enabled!' : 'Enable Notifications'}
               </Text>
               {permissionStatus === 'denied' && (
-                <Text style={{ fontSize: 11, color: colors.danger, fontWeight: '600' }}>Permission Denied</Text>
+                <Text style={{ fontSize: 11, color: colors.danger, fontFamily: colors.fontFamilySemiBold, marginTop: -2 }}>Permission Denied</Text>
               )}
             </View>
           </TouchableOpacity>
@@ -314,7 +318,7 @@ export default function OnBoarding({
         {step > 0 ? (
           <TouchableOpacity onPress={handleBack} style={styles.btnBack}>
             <ArrowLeft size={16} color={colors.textSecondary} />
-            <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>Back</Text>
+            <Text style={{ color: colors.textSecondary, fontFamily: colors.fontFamilyBold, marginTop: -2 }}>Back</Text>
           </TouchableOpacity>
         ) : (
           <View style={{ width: 60 }} />
@@ -339,7 +343,7 @@ export default function OnBoarding({
           disabled={step === 0 && !name.trim()}
           style={[styles.btnNext, step === 0 && !name.trim() && styles.btnDisabled]}
         >
-          <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+          <Text style={{ color: '#FFFFFF', fontFamily: colors.fontFamilyBold, marginTop: -2 }}>
             {step === 2 ? 'Get Started' : 'Next'}
           </Text>
           <ArrowRight size={16} color="#FFFFFF" />

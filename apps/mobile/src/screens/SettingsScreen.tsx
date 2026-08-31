@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
   TouchableOpacity,
   Modal,
   ScrollView,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  TextInput
 } from 'react-native';
 import { Class } from '@flowtime/types';
-import { 
+import {
   Sun,
   Moon,
   Monitor,
@@ -20,12 +21,15 @@ import {
   ArrowLeft,
   LogOut,
   Bell,
-  Check
+  Check,
+  PenLineIcon
 } from 'lucide-react-native';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
 interface SettingsScreenProps {
+  userName: string;
+  handleUserNameChange: (name: string) => void;
   classes: Class[];
   selectedClassId: string | null;
   handleClassChange: (id: string) => void;
@@ -41,6 +45,8 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({
+  userName,
+  handleUserNameChange,
   classes,
   selectedClassId,
   handleClassChange,
@@ -54,9 +60,18 @@ export default function SettingsScreen({
   accentColorsList,
   onHeaderTap
 }: SettingsScreenProps) {
+  const [showEditUserNameModal, setShowEditUserNameModal] = useState(false);
   const [showClassModal, setShowClassModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showAccentModal, setShowAccentModal] = useState(false);
+  const [tempUserName, setTempUserName] = useState(userName);
+
+  // Sync tempUserName when modal opens
+  useEffect(() => {
+    if (showEditUserNameModal) {
+      setTempUserName(userName);
+    }
+  }, [showEditUserNameModal, userName]);
 
   const styles = StyleSheet.create({
     card: {
@@ -92,7 +107,7 @@ export default function SettingsScreen({
     rowLabel: {
       fontSize: 14,
       color: colors.textPrimary,
-      fontWeight: '500',
+      fontFamily: colors.fontFamilyMedium,
     },
     rowValue: {
       fontSize: 13,
@@ -100,7 +115,7 @@ export default function SettingsScreen({
     },
     title: {
       fontSize: 11,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
@@ -140,7 +155,7 @@ export default function SettingsScreen({
     },
     modalTitle: {
       fontSize: 16,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
     },
     modalContent: {
@@ -158,10 +173,49 @@ export default function SettingsScreen({
     modalItemText: {
       fontSize: 14,
       color: colors.textPrimary,
+      fontFamily: colors.fontFamily
     },
     modalItemTextSelected: {
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.accent,
+    },
+    textInput: {
+      backgroundColor: colors.background,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 10,
+      padding: 12,
+      margin: 20,
+      fontSize: 14,
+      color: colors.textPrimary,
+      fontFamily: colors.fontFamily
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      gap: 12,
+    },
+    buttonSave: {
+      backgroundColor: colors.accent,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    buttonSaveText: {
+      color: '#FFFFFF',
+      fontFamily: colors.fontFamilyBold,
+      fontSize: 14,
+    },
+    buttonCancel: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    },
+    buttonCancelText: {
+      color: colors.textSecondary,
+      fontFamily: colors.fontFamilyMedium,
+      fontSize: 14,
     },
   });
 
@@ -177,7 +231,7 @@ export default function SettingsScreen({
         </TouchableOpacity>
         <TouchableWithoutFeedback onPress={onHeaderTap}>
           <View>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textPrimary }}>
+            <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.textPrimary }}>
               Settings
             </Text>
           </View>
@@ -195,11 +249,13 @@ export default function SettingsScreen({
               <User size={18} color="#FFFFFF" />
             </View>
             <View>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>Purval Radadiya</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>purval@example.com</Text>
+              <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>{userName}</Text>
+              {/* <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>purval@example.com</Text> */}
             </View>
           </View>
-          <ChevronRight size={16} color={colors.textMuted} />
+          <TouchableOpacity onPress={() => setShowEditUserNameModal(true)}>
+            <PenLineIcon size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Division Selection Row */}
@@ -209,8 +265,8 @@ export default function SettingsScreen({
               <BookOpen size={16} color={colors.textSecondary} />
             </View>
             <View style={{ gap: 2 }}>
-              <Text style={styles.rowLabel}>Class Section</Text>
-              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary }]}>{classLabel}</Text>
+              <Text style={[styles.rowLabel,{ marginTop: -2}]}>Class Section</Text>
+              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary, fontFamily: colors.fontFamily, marginTop: -2 }]}>{classLabel}</Text>
             </View>
           </View>
           <ChevronRight size={16} color={colors.textMuted} />
@@ -233,8 +289,8 @@ export default function SettingsScreen({
               )}
             </View>
             <View style={{ gap: 2 }}>
-              <Text style={styles.rowLabel}>Appearance</Text>
-              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary }]}>
+              <Text style={[styles.rowLabel,{ marginTop: -2}]}>Appearance</Text>
+              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary, fontFamily: colors.fontFamily , marginTop: -2}]}>
                 {themeMode.charAt(0).toUpperCase() + themeMode.slice(1)} Mode
               </Text>
             </View>
@@ -248,10 +304,10 @@ export default function SettingsScreen({
             <View style={styles.iconWrapper}>
               <Bell size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.rowLabel}>Notifications</Text>
+            <Text style={[styles.rowLabel,{ marginTop: -2}]}>Notifications</Text>
           </View>
-          <TouchableOpacity 
-            onPress={() => handleToggleNotifications(!notificationsEnabled)} 
+          <TouchableOpacity
+            onPress={() => handleToggleNotifications(!notificationsEnabled)}
             activeOpacity={0.8}
             style={{
               width: 40,
@@ -279,8 +335,8 @@ export default function SettingsScreen({
               <Palette size={16} color={colors.textSecondary} />
             </View>
             <View style={{ gap: 2 }}>
-              <Text style={styles.rowLabel}>Accent Color</Text>
-              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary }]}>
+              <Text style={[styles.rowLabel,{ marginTop: -2}]}>Accent Color</Text>
+              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary, fontFamily: colors.fontFamily, marginTop: -2 }]}>
                 {accentColorsList[accentColor]?.label || 'Indigo'}
               </Text>
             </View>
@@ -293,7 +349,7 @@ export default function SettingsScreen({
       </View>
 
       {/* Logout Row at Bottom */}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={() => handleClassChange('')}
         style={{
           backgroundColor: '#FEE2E2',
@@ -309,164 +365,222 @@ export default function SettingsScreen({
         }}
       >
         <LogOut size={16} color="#DC2626" />
-        <Text style={{ color: '#DC2626', fontWeight: 'bold', fontSize: 14 }}>Reset / Logout</Text>
+        <Text style={{ color: '#DC2626', fontFamily: colors.fontFamilyBold, fontSize: 14, marginTop: -2 }}>Reset / Logout</Text>
       </TouchableOpacity>
+      
+      {/* User Name Modal */}
+      <Modal
+        visible={showEditUserNameModal}
+        transparent={true}
+        statusBarTranslucent={true}
+        animationType="fade"
+        onRequestClose={() => setShowEditUserNameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowEditUserNameModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle,{ marginTop: -2}]}>Edit User Name</Text>
+              <TouchableOpacity onPress={() => setShowEditUserNameModal(false)}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: colors.fontFamilyMedium, marginTop: -2 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.textInput}
+              value={tempUserName}
+              onChangeText={setTempUserName}
+              placeholder="Enter your name"
+              placeholderTextColor={colors.textMuted}
+              autoFocus={true}
+            />
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.buttonCancel}
+                onPress={() => setShowEditUserNameModal(false)}
+              >
+                <Text style={[styles.buttonCancelText,{ marginTop: -2}]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.buttonSave}
+                onPress={() => {
+                  if (tempUserName.trim()) {
+                    handleUserNameChange(tempUserName.trim());
+                    setShowEditUserNameModal(false);
+                  }
+                }}
+              >
+                <Text style={[styles.buttonSaveText,{ marginTop: -2}]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Class Selection Modal */}
       <Modal
         visible={showClassModal}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setShowClassModal(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setShowClassModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Choose Class Section</Text>
-                  <TouchableOpacity onPress={() => setShowClassModal(false)}>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '500' }}>Cancel</Text>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowClassModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle,{ marginTop: -2}]}>Choose Class Section</Text>
+              <TouchableOpacity onPress={() => setShowClassModal(false)}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: colors.fontFamilyMedium, marginTop: -2 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent}>
+              {classes.map((cls) => {
+                const isSelected = cls.id === selectedClassId;
+                return (
+                  <TouchableOpacity
+                    key={cls.id}
+                    onPress={() => {
+                      handleClassChange(cls.id);
+                      setShowClassModal(false);
+                    }}
+                    style={styles.modalItem}
+                  >
+                    <Text style={[
+                      styles.modalItemText,
+                      isSelected && styles.modalItemTextSelected,{ marginTop: -2}
+                    ]}>
+                      {cls.name} ({cls.section})
+                    </Text>
+                    {isSelected && (
+                      <Check size={16} color={colors.accent} />
+                    )}
                   </TouchableOpacity>
-                </View>
-                <ScrollView style={styles.modalContent}>
-                  {classes.map((cls) => {
-                    const isSelected = cls.id === selectedClassId;
-                    return (
-                      <TouchableOpacity
-                        key={cls.id}
-                        onPress={() => {
-                          handleClassChange(cls.id);
-                          setShowClassModal(false);
-                        }}
-                        style={styles.modalItem}
-                      >
-                        <Text style={[
-                          styles.modalItemText,
-                          isSelected && styles.modalItemTextSelected
-                        ]}>
-                          {cls.name} ({cls.section})
-                        </Text>
-                        {isSelected && (
-                          <Check size={16} color={colors.accent} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
+                );
+              })}
+            </ScrollView>
           </View>
-        </TouchableWithoutFeedback>
+        </View>
       </Modal>
 
       {/* Theme Selection Modal */}
       <Modal
         visible={showThemeModal}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setShowThemeModal(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setShowThemeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Choose Appearance</Text>
-                  <TouchableOpacity onPress={() => setShowThemeModal(false)}>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '500' }}>Cancel</Text>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowThemeModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle,{ marginTop: -2}]}>Choose Appearance</Text>
+              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: colors.fontFamilyMedium, marginTop: -2 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              {([
+                { value: 'light', label: 'Light Mode', icon: Sun },
+                { value: 'dark', label: 'Dark Mode', icon: Moon },
+                { value: 'system', label: 'System Default', icon: Monitor },
+              ] as const).map((item) => {
+                const isSelected = themeMode === item.value;
+                const IconComponent = item.icon;
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    onPress={() => {
+                      handleThemeChange(item.value);
+                      setShowThemeModal(false);
+                    }}
+                    style={styles.modalItem}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <IconComponent size={16} color={isSelected ? colors.accent : colors.textSecondary} />
+                      <Text style={[
+                        styles.modalItemText,
+                        isSelected && styles.modalItemTextSelected,{ marginTop: -2}
+                      ]}>
+                        {item.label}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Check size={16} color={colors.accent} />
+                    )}
                   </TouchableOpacity>
-                </View>
-                <View style={styles.modalContent}>
-                  {([
-                    { value: 'light', label: 'Light Mode', icon: Sun },
-                    { value: 'dark', label: 'Dark Mode', icon: Moon },
-                    { value: 'system', label: 'System Default', icon: Monitor },
-                  ] as const).map((item) => {
-                    const isSelected = themeMode === item.value;
-                    const IconComponent = item.icon;
-                    return (
-                      <TouchableOpacity
-                        key={item.value}
-                        onPress={() => {
-                          handleThemeChange(item.value);
-                          setShowThemeModal(false);
-                        }}
-                        style={styles.modalItem}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                          <IconComponent size={16} color={isSelected ? colors.accent : colors.textSecondary} />
-                          <Text style={[
-                            styles.modalItemText,
-                            isSelected && styles.modalItemTextSelected
-                          ]}>
-                            {item.label}
-                          </Text>
-                        </View>
-                        {isSelected && (
-                          <Check size={16} color={colors.accent} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
+                );
+              })}
+            </View>
           </View>
-        </TouchableWithoutFeedback>
+        </View>
       </Modal>
 
       {/* Accent Color Selection Modal */}
       <Modal
         visible={showAccentModal}
         transparent={true}
+        statusBarTranslucent={true}
         animationType="fade"
         onRequestClose={() => setShowAccentModal(false)}
       >
-        <TouchableWithoutFeedback onPress={() => setShowAccentModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Choose Accent Color</Text>
-                  <TouchableOpacity onPress={() => setShowAccentModal(false)}>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '500' }}>Cancel</Text>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowAccentModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle,{ marginTop: -2}]}>Choose Accent Color</Text>
+              <TouchableOpacity onPress={() => setShowAccentModal(false)}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: colors.fontFamilyMedium, marginTop: -2 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              {Object.entries(accentColorsList).map(([key, item]: [string, any]) => {
+                const isSelected = key === accentColor;
+                const isDarkModeActive = colors.background === '#0F172A';
+                const previewColor = isDarkModeActive ? item.dark.accent : item.light.accent;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => {
+                      handleAccentChange(key);
+                      setShowAccentModal(false);
+                    }}
+                    style={styles.modalItem}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: previewColor }} />
+                      <Text style={[
+                        styles.modalItemText,
+                        isSelected && styles.modalItemTextSelected,{ marginTop: -2}
+                      ]}>
+                        {item.label}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Check size={16} color={colors.accent} />
+                    )}
                   </TouchableOpacity>
-                </View>
-                <View style={styles.modalContent}>
-                  {Object.entries(accentColorsList).map(([key, item]: [string, any]) => {
-                    const isSelected = key === accentColor;
-                    const isDarkModeActive = colors.background === '#0F172A';
-                    const previewColor = isDarkModeActive ? item.dark.accent : item.light.accent;
-                    return (
-                      <TouchableOpacity
-                        key={key}
-                        onPress={() => {
-                          handleAccentChange(key);
-                          setShowAccentModal(false);
-                        }}
-                        style={styles.modalItem}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                          <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: previewColor }} />
-                          <Text style={[
-                            styles.modalItemText,
-                            isSelected && styles.modalItemTextSelected
-                          ]}>
-                            {item.label}
-                          </Text>
-                        </View>
-                        {isSelected && (
-                          <Check size={16} color={colors.accent} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
+                );
+              })}
+            </View>
           </View>
-        </TouchableWithoutFeedback>
+        </View>
       </Modal>
     </View>
   );

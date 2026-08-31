@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -6,7 +6,8 @@ import {
   TextInput, 
   TouchableOpacity, 
   ActivityIndicator, 
-  Alert 
+  Alert,
+  BackHandler
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Class } from '@flowtime/types';
@@ -63,6 +64,17 @@ export default function AdminScreen({
 }: AdminScreenProps) {
   const [subView, setSubView] = useState<AdminSubView>('menu');
 
+  useEffect(() => {
+    if (subView !== 'menu') {
+      const onBackPress = () => {
+        setSubView('menu');
+        return true;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }
+  }, [subView]);
+
   const styles = StyleSheet.create({
     card: {
       backgroundColor: colors.surface,
@@ -90,17 +102,18 @@ export default function AdminScreen({
     },
     btnText: {
       color: '#FFFFFF',
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       fontSize: 14,
+      marginTop: -2,
     },
     title: {
       fontSize: 13,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 1,
       marginBottom: 12,
-      marginTop: 8,
+      marginTop: -2,
     },
     menuItem: {
       backgroundColor: colors.surface,
@@ -115,8 +128,9 @@ export default function AdminScreen({
     },
     menuItemText: {
       fontSize: 14,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
+      marginTop: -2,
     }
   });
 
@@ -129,13 +143,13 @@ export default function AdminScreen({
             <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
               <Lock size={20} color={colors.accent} />
             </View>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.textPrimary }}>Staff Portal Login</Text>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>
+            <Text style={{ fontSize: 16, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>Staff Portal Login</Text>
+            <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2, textAlign: 'center' }}>
               Sign in using your administrator credentials to access management tools.
             </Text>
           </View>
 
-          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Email Address</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Email Address</Text>
           <TextInput
             value={adminEmail}
             onChangeText={setAdminEmail}
@@ -146,7 +160,7 @@ export default function AdminScreen({
             style={styles.input}
           />
 
-          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Password</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Password</Text>
           <TextInput
             value={adminPassword}
             onChangeText={setAdminPassword}
@@ -206,27 +220,27 @@ export default function AdminScreen({
           onPress={handleAdminSignOut}
           style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: colors.danger, backgroundColor: colors.surface }}
         >
-          <Text style={{ fontSize: 11, fontWeight: 'bold', color: colors.danger }}>Sign Out</Text>
+          <Text style={{ fontSize: 11, fontFamily: colors.fontFamilyBold, color: colors.danger, marginTop: -2 }}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
       {/* Database Overview Stats */}
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
         <View style={[styles.card, { flex: 1, alignItems: 'center', marginBottom: 0, padding: 12 }]}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.accent }}>{classes.length}</Text>
-          <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4 }}>Classes</Text>
+          <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>{classes.length}</Text>
+          <Text style={{ fontSize: 10, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Classes</Text>
         </View>
         <View style={[styles.card, { flex: 1, alignItems: 'center', marginBottom: 0, padding: 12 }]}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.accent }}>{stats.subjects}</Text>
-          <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4 }}>Subjects</Text>
+          <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>{stats.subjects}</Text>
+          <Text style={{ fontSize: 10, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Subjects</Text>
         </View>
         <View style={[styles.card, { flex: 1, alignItems: 'center', marginBottom: 0, padding: 12 }]}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.accent }}>{stats.rooms}</Text>
-          <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4 }}>Rooms</Text>
+          <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>{stats.rooms}</Text>
+          <Text style={{ fontSize: 10, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Rooms</Text>
         </View>
         <View style={[styles.card, { flex: 1, alignItems: 'center', marginBottom: 0, padding: 12 }]}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.accent }}>{stats.professors}</Text>
-          <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 4 }}>Staff</Text>
+          <Text style={{ fontSize: 18, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>{stats.professors}</Text>
+          <Text style={{ fontSize: 10, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Staff</Text>
         </View>
       </View>
 

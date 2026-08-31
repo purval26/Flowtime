@@ -60,9 +60,10 @@ export default function ViewAuditLogs({ colors, onBack }: ViewAuditLogsProps) {
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 12,
+      marginTop: -2,
     }
   });
 
@@ -74,7 +75,7 @@ export default function ViewAuditLogs({ colors, onBack }: ViewAuditLogsProps) {
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
       >
         <ArrowLeft size={16} color={colors.accent} />
-        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.accent }}>Back to Admin Menu</Text>
+        <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Back to Admin Menu</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>📜 Database Audit Logs (Last 20)</Text>
@@ -82,20 +83,20 @@ export default function ViewAuditLogs({ colors, onBack }: ViewAuditLogsProps) {
         <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
       ) : audits.length === 0 ? (
         <View style={styles.card}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>No recent audit activity found.</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, textAlign: 'center', marginTop: -2 }}>No recent audit activity found.</Text>
         </View>
       ) : (
         audits.map((log) => (
           <View key={log.id} style={[styles.card, { paddingVertical: 12, marginBottom: 8 }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', color: colors.textPrimary }}>
+              <Text style={{ fontSize: 13, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>
                 {log.action} on {log.target_table}
               </Text>
-              <Text style={{ fontSize: 9, color: colors.textMuted }}>
+              <Text style={{ fontSize: 9, fontFamily: colors.fontFamily, color: colors.textMuted, marginTop: -2 }}>
                 {new Date(log.created_at).toLocaleTimeString()}
               </Text>
             </View>
-            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+            <Text style={{ fontSize: 11, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>
               ID: {log.id} • Date: {new Date(log.created_at).toLocaleDateString()}
             </Text>
           </View>

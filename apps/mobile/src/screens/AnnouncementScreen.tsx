@@ -48,8 +48,9 @@ export default function AnnouncementScreen({
     },
     headerTitle: {
       fontSize: 18,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
+      marginTop: -2
     },
     list: {
       padding: 16,
@@ -77,21 +78,25 @@ export default function AnnouncementScreen({
     },
     tagText: {
       fontSize: 9,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textSecondary,
       textTransform: 'uppercase',
+      marginTop: -2
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 6,
+      marginTop: -2
     },
     description: {
       fontSize: 13,
       color: colors.textSecondary,
       lineHeight: 18,
       marginBottom: 10,
+      marginTop: -2,
+      fontFamily: colors.fontFamily
     },
     footer: {
       flexDirection: 'row',
@@ -101,6 +106,8 @@ export default function AnnouncementScreen({
     dateText: {
       fontSize: 11,
       color: colors.textMuted,
+      marginTop: -2,
+      fontFamily: colors.fontFamily
     },
     unreadDot: {
       position: 'absolute',
@@ -131,7 +138,7 @@ export default function AnnouncementScreen({
     <View style={styles.container}>
       {/* Header Bar */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={{ padding: 4 }}>
+        <TouchableOpacity onPress={onBack} style={{ padding: 4, paddingTop:6 }}>
           <ArrowLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Announcements</Text>
@@ -154,7 +161,7 @@ export default function AnnouncementScreen({
         {announcements.length === 0 ? (
           <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 }}>
             <Bell size={48} color={colors.textMuted} style={{ opacity: 0.5 }} />
-            <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textSecondary }}>No announcements</Text>
+            <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textSecondary }}>No announcements</Text>
             <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 }}>
               Divisional notices and broadcast updates will show up here.
             </Text>

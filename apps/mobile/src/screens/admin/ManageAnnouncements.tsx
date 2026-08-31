@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Class, Announcement } from '@flowtime/types';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Plus, Trash2, ArrowLeft, Pencil, X } from 'lucide-react-native';
 
 interface ManageAnnouncementsProps {
   colors: any;
@@ -24,6 +24,7 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
   const [loading, setLoading] = useState(true);
 
   // Form states
+  const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
   const [newNoticeTitle, setNewNoticeTitle] = useState('');
   const [newNoticeContent, setNewNoticeContent] = useState('');
   const [newNoticeClassId, setNewNoticeClassId] = useState<string>('global');
@@ -49,7 +50,21 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
     loadData();
   }, []);
 
-  const handleCreateNotice = async () => {
+  const handleStartEdit = (notice: Announcement) => {
+    setEditingNoticeId(notice.id);
+    setNewNoticeTitle(notice.title);
+    setNewNoticeContent(notice.content);
+    setNewNoticeClassId(notice.class_id || 'global');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNoticeId(null);
+    setNewNoticeTitle('');
+    setNewNoticeContent('');
+    setNewNoticeClassId('global');
+  };
+
+  const handleSaveNotice = async () => {
     if (!newNoticeTitle.trim() || !newNoticeContent.trim()) {
       Alert.alert('Form Error', 'Please fill in both a title and details.');
       return;
@@ -57,19 +72,28 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
     setBroadcasting(true);
     try {
       const classIdVal = newNoticeClassId === 'global' ? null : newNoticeClassId;
-      const { error } = await supabase.from('announcements').insert({
-        title: newNoticeTitle.trim(),
-        content: newNoticeContent.trim(),
-        class_id: classIdVal
-      });
-      if (error) throw error;
+      if (editingNoticeId) {
+        const { error } = await supabase.from('announcements').update({
+          title: newNoticeTitle.trim(),
+          content: newNoticeContent.trim(),
+          class_id: classIdVal
+        }).eq('id', editingNoticeId);
+        if (error) throw error;
+        Alert.alert('Success', 'Notice updated successfully!');
+      } else {
+        const { error } = await supabase.from('announcements').insert({
+          title: newNoticeTitle.trim(),
+          content: newNoticeContent.trim(),
+          class_id: classIdVal
+        });
+        if (error) throw error;
+        Alert.alert('Broadcast Success', 'Notice sent successfully!');
+      }
 
-      Alert.alert('Broadcast Success', 'Notice sent successfully!');
-      setNewNoticeTitle('');
-      setNewNoticeContent('');
+      handleCancelEdit();
       loadData();
     } catch (err: any) {
-      Alert.alert('Broadcast Failure', err.message || 'Error occurred');
+      Alert.alert('Save Failure', err.message || 'Error occurred');
     } finally {
       setBroadcasting(false);
     }
@@ -86,6 +110,7 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
             const { error } = await supabase.from('announcements').delete().eq('id', noticeId);
             if (error) throw error;
             Alert.alert('Success', 'Notice deleted');
+            if (editingNoticeId === noticeId) handleCancelEdit();
             loadData();
           } catch (err: any) {
             Alert.alert('Error', err.message);
@@ -128,8 +153,9 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
     },
     badgeText: {
       fontSize: 11,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textSecondary,
+      marginTop: -2,
     },
     badgeTextSelected: {
       color: '#FFFFFF',
@@ -142,14 +168,16 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
     },
     btnText: {
       color: '#FFFFFF',
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       fontSize: 14,
+      marginTop: -2,
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 12,
+      marginTop: -2,
     }
   });
 
@@ -161,13 +189,13 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
       >
         <ArrowLeft size={16} color={colors.accent} />
-        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.accent }}>Back to Admin Menu</Text>
+        <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Back to Admin Menu</Text>
       </TouchableOpacity>
 
       {/* Announcements Notice Broadcaster Form */}
-      <Text style={styles.title}>📢 Broadcast Notice</Text>
+      <Text style={styles.title}>{editingNoticeId ? '✏️ Edit Notice' : '📢 Broadcast Notice'}</Text>
       <View style={styles.card}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Notice Headline</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Notice Headline</Text>
         <TextInput
           value={newNoticeTitle}
           onChangeText={setNewNoticeTitle}
@@ -176,7 +204,7 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
           style={styles.input}
         />
 
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Target Division</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Target Division</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           <TouchableOpacity
             onPress={() => setNewNoticeClassId('global')}
@@ -195,7 +223,7 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
           ))}
         </ScrollView>
 
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Details / Description</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Details / Description</Text>
         <TextInput
           value={newNoticeContent}
           onChangeText={setNewNoticeContent}
@@ -206,17 +234,27 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
           style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
         />
 
-        <TouchableOpacity 
-          onPress={handleCreateNotice}
-          disabled={broadcasting}
-          style={styles.btn}
-        >
-          {broadcasting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.btnText}>Broadcast Notice</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {editingNoticeId && (
+            <TouchableOpacity 
+              onPress={handleCancelEdit}
+              style={[styles.btn, { backgroundColor: colors.border, flex: 1 }]}
+            >
+              <Text style={[styles.btnText, { color: colors.textPrimary }]}>Cancel</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleSaveNotice}
+            disabled={broadcasting}
+            style={[styles.btn, { flex: 2 }]}
+          >
+            {broadcasting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.btnText}>{editingNoticeId ? 'Update Notice' : 'Broadcast Notice'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Manage Existing Notices */}
@@ -225,20 +263,25 @@ export default function ManageAnnouncements({ colors, onBack }: ManageAnnounceme
         <ActivityIndicator size="small" color={colors.accent} />
       ) : announcements.length === 0 ? (
         <View style={styles.card}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>No active notices found.</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, textAlign: 'center', marginTop: -2 }}>No active notices found.</Text>
         </View>
       ) : (
         announcements.map((item) => (
           <View key={item.id} style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', color: colors.textPrimary }}>{item.title}</Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+              <Text style={{ fontSize: 13, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>{item.title}</Text>
+              <Text style={{ fontSize: 10, fontFamily: colors.fontFamily, color: colors.textMuted, marginTop: -2 }}>
                 {item.class_id ? 'Class Specific' : 'Global Broadcast'} • {new Date(item.created_at).toLocaleDateString()}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteNotice(item.id)} style={{ padding: 6 }}>
-              <Trash2 size={16} color={colors.danger} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity onPress={() => handleStartEdit(item)} style={{ padding: 6 }}>
+                <Pencil size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteNotice(item.id)} style={{ padding: 6 }}>
+                <Trash2 size={16} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}

@@ -10,7 +10,7 @@ import {
   Alert 
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Plus, Trash2, ArrowLeft, Pencil } from 'lucide-react-native';
 
 interface Professor {
   id: string;
@@ -27,6 +27,7 @@ interface ManageProfessorsProps {
 export default function ManageProfessors({ colors, onBack }: ManageProfessorsProps) {
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProfId, setEditingProfId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [shortName, setShortName] = useState('');
@@ -52,24 +53,46 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
     fetchProfessors();
   }, []);
 
-  const handleAddProfessor = async () => {
+  const handleStartEdit = (prof: Professor) => {
+    setEditingProfId(prof.id);
+    setName(prof.name);
+    setEmail(prof.email);
+    setShortName(prof.short_name);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProfId(null);
+    setName('');
+    setEmail('');
+    setShortName('');
+  };
+
+  const handleSaveProfessor = async () => {
     if (!name.trim() || !email.trim() || !shortName.trim()) {
       Alert.alert('Validation Error', 'Please fill in Name, Email, and Short Name.');
       return;
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('professors')
-        .insert({ name: name.trim(), email: email.trim(), short_name: shortName.trim() });
-      if (error) throw error;
-      Alert.alert('Success', 'Professor added successfully!');
-      setName('');
-      setEmail('');
-      setShortName('');
+      if (editingProfId) {
+        const { error } = await supabase
+          .from('professors')
+          .update({ name: name.trim(), email: email.trim(), short_name: shortName.trim() })
+          .eq('id', editingProfId);
+        if (error) throw error;
+        Alert.alert('Success', 'Professor profile updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('professors')
+          .insert({ name: name.trim(), email: email.trim(), short_name: shortName.trim() });
+        if (error) throw error;
+        Alert.alert('Success', 'Professor added successfully!');
+      }
+
+      handleCancelEdit();
       fetchProfessors();
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to add professor');
+      Alert.alert('Error', e.message || 'Failed to save professor');
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +115,7 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
                 .eq('id', id);
               if (error) throw error;
               Alert.alert('Success', 'Professor deleted');
+              if (editingProfId === id) handleCancelEdit();
               fetchProfessors();
             } catch (e: any) {
               Alert.alert('Error', e.message);
@@ -132,14 +156,16 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
     },
     btnText: {
       color: '#FFFFFF',
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       fontSize: 14,
+      marginTop: -2,
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 12,
+      marginTop: -2,
     }
   });
 
@@ -151,13 +177,13 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
       >
         <ArrowLeft size={16} color={colors.accent} />
-        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.accent }}>Back to Admin Menu</Text>
+        <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Back to Admin Menu</Text>
       </TouchableOpacity>
 
-      {/* Add Professor Form */}
-      <Text style={styles.title}>👨‍🏫 Create Professor / Teacher Profile</Text>
+      {/* Add / Edit Professor Form */}
+      <Text style={styles.title}>{editingProfId ? '✏️ Edit Professor Profile' : '👨‍🏫 Create Professor / Teacher Profile'}</Text>
       <View style={styles.card}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Full Name</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Full Name</Text>
         <TextInput
           value={name}
           onChangeText={setName}
@@ -165,7 +191,7 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Email Address</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Email Address</Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -175,7 +201,7 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
           keyboardType="email-address"
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Initials / Short Name</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Initials / Short Name</Text>
         <TextInput
           value={shortName}
           onChangeText={setShortName}
@@ -183,14 +209,21 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <TouchableOpacity onPress={handleAddProfessor} disabled={submitting} style={styles.btn}>
-          {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
-            <>
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.btnText}>Add Professor</Text>
-            </>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {editingProfId && (
+            <TouchableOpacity onPress={handleCancelEdit} style={[styles.btn, { backgroundColor: colors.border, flex: 1 }]}>
+              <Text style={[styles.btnText, { color: colors.textPrimary }]}>Cancel</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleSaveProfessor} disabled={submitting} style={[styles.btn, { flex: 2 }]}>
+            {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
+              <>
+                {editingProfId ? <Pencil size={16} color="#FFFFFF" /> : <Plus size={16} color="#FFFFFF" />}
+                <Text style={styles.btnText}>{editingProfId ? 'Update Professor' : 'Add Professor'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Professors List */}
@@ -199,18 +232,23 @@ export default function ManageProfessors({ colors, onBack }: ManageProfessorsPro
         <ActivityIndicator size="small" color={colors.accent} />
       ) : professors.length === 0 ? (
         <View style={styles.card}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>No professors configured yet.</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, textAlign: 'center', marginTop: -2 }}>No professors configured yet.</Text>
         </View>
       ) : (
         professors.map((prof) => (
           <View key={prof.id} style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>{prof.name}</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{prof.email} • Initials: {prof.short_name}</Text>
+              <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>{prof.name}</Text>
+              <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>{prof.email} • Initials: {prof.short_name}</Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteProfessor(prof.id, prof.name)} style={{ padding: 6 }}>
-              <Trash2 size={16} color={colors.danger} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity onPress={() => handleStartEdit(prof)} style={{ padding: 6 }}>
+                <Pencil size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteProfessor(prof.id, prof.name)} style={{ padding: 6 }}>
+                <Trash2 size={16} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}

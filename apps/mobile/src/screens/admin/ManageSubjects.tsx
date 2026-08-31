@@ -10,7 +10,7 @@ import {
   Alert 
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Plus, Trash2, ArrowLeft, Pencil } from 'lucide-react-native';
 
 interface Subject {
   id: string;
@@ -27,6 +27,7 @@ interface ManageSubjectsProps {
 export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [shortName, setShortName] = useState('');
@@ -52,24 +53,46 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
     fetchSubjects();
   }, []);
 
-  const handleAddSubject = async () => {
+  const handleStartEdit = (sub: Subject) => {
+    setEditingSubjectId(sub.id);
+    setName(sub.name);
+    setCode(sub.code);
+    setShortName(sub.short_name);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSubjectId(null);
+    setName('');
+    setCode('');
+    setShortName('');
+  };
+
+  const handleSaveSubject = async () => {
     if (!name.trim() || !code.trim() || !shortName.trim()) {
       Alert.alert('Validation Error', 'Please fill in Name, Code, and Short Name.');
       return;
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('subjects')
-        .insert({ name: name.trim(), code: code.trim(), short_name: shortName.trim() });
-      if (error) throw error;
-      Alert.alert('Success', 'Subject added successfully!');
-      setName('');
-      setCode('');
-      setShortName('');
+      if (editingSubjectId) {
+        const { error } = await supabase
+          .from('subjects')
+          .update({ name: name.trim(), code: code.trim(), short_name: shortName.trim() })
+          .eq('id', editingSubjectId);
+        if (error) throw error;
+        Alert.alert('Success', 'Subject updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('subjects')
+          .insert({ name: name.trim(), code: code.trim(), short_name: shortName.trim() });
+        if (error) throw error;
+        Alert.alert('Success', 'Subject added successfully!');
+      }
+
+      handleCancelEdit();
       fetchSubjects();
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to add subject');
+      Alert.alert('Error', e.message || 'Failed to save subject');
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +115,7 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
                 .eq('id', id);
               if (error) throw error;
               Alert.alert('Success', 'Subject deleted');
+              if (editingSubjectId === id) handleCancelEdit();
               fetchSubjects();
             } catch (e: any) {
               Alert.alert('Error', e.message);
@@ -132,14 +156,16 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
     },
     btnText: {
       color: '#FFFFFF',
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       fontSize: 14,
+      marginTop: -2,
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 12,
+      marginTop: -2,
     }
   });
 
@@ -151,13 +177,13 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
       >
         <ArrowLeft size={16} color={colors.accent} />
-        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.accent }}>Back to Admin Menu</Text>
+        <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Back to Admin Menu</Text>
       </TouchableOpacity>
 
-      {/* Add Subject Form */}
-      <Text style={styles.title}>📘 Create Subject</Text>
+      {/* Add / Edit Subject Form */}
+      <Text style={styles.title}>{editingSubjectId ? '✏️ Edit Subject' : '📘 Create Subject'}</Text>
       <View style={styles.card}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Subject Name</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Subject Name</Text>
         <TextInput
           value={name}
           onChangeText={setName}
@@ -165,7 +191,7 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Subject Code</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Subject Code</Text>
         <TextInput
           value={code}
           onChangeText={setCode}
@@ -173,7 +199,7 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Abbreviation / Short Name</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Abbreviation / Short Name</Text>
         <TextInput
           value={shortName}
           onChangeText={setShortName}
@@ -181,14 +207,21 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <TouchableOpacity onPress={handleAddSubject} disabled={submitting} style={styles.btn}>
-          {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
-            <>
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.btnText}>Add Subject</Text>
-            </>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {editingSubjectId && (
+            <TouchableOpacity onPress={handleCancelEdit} style={[styles.btn, { backgroundColor: colors.border, flex: 1 }]}>
+              <Text style={[styles.btnText, { color: colors.textPrimary }]}>Cancel</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleSaveSubject} disabled={submitting} style={[styles.btn, { flex: 2 }]}>
+            {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
+              <>
+                {editingSubjectId ? <Pencil size={16} color="#FFFFFF" /> : <Plus size={16} color="#FFFFFF" />}
+                <Text style={styles.btnText}>{editingSubjectId ? 'Update Subject' : 'Add Subject'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Subjects List */}
@@ -197,18 +230,23 @@ export default function ManageSubjects({ colors, onBack }: ManageSubjectsProps) 
         <ActivityIndicator size="small" color={colors.accent} />
       ) : subjects.length === 0 ? (
         <View style={styles.card}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>No subjects configured yet.</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, textAlign: 'center', marginTop: -2 }}>No subjects configured yet.</Text>
         </View>
       ) : (
         subjects.map((sub) => (
           <View key={sub.id} style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>{sub.name}</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Code: {sub.code} • Abbrev: {sub.short_name}</Text>
+              <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>{sub.name}</Text>
+              <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Code: {sub.code} • Abbrev: {sub.short_name}</Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteSubject(sub.id, sub.name)} style={{ padding: 6 }}>
-              <Trash2 size={16} color={colors.danger} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity onPress={() => handleStartEdit(sub)} style={{ padding: 6 }}>
+                <Pencil size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteSubject(sub.id, sub.name)} style={{ padding: 6 }}>
+                <Trash2 size={16} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}

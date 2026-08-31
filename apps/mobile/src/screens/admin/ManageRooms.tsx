@@ -10,7 +10,7 @@ import {
   Alert 
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Plus, Trash2, ArrowLeft, Pencil } from 'lucide-react-native';
 
 interface Room {
   id: string;
@@ -27,6 +27,7 @@ interface ManageRoomsProps {
 export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [building, setBuilding] = useState('');
   const [capacity, setCapacity] = useState('');
@@ -52,7 +53,21 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
     fetchRooms();
   }, []);
 
-  const handleAddRoom = async () => {
+  const handleStartEdit = (room: Room) => {
+    setEditingRoomId(room.id);
+    setName(room.name);
+    setBuilding(room.building);
+    setCapacity(room.capacity ? room.capacity.toString() : '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRoomId(null);
+    setName('');
+    setBuilding('');
+    setCapacity('');
+  };
+
+  const handleSaveRoom = async () => {
     if (!name.trim() || !building.trim()) {
       Alert.alert('Validation Error', 'Please enter Room Name and Building.');
       return;
@@ -60,17 +75,25 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
     setSubmitting(true);
     try {
       const capInt = capacity ? parseInt(capacity, 10) : null;
-      const { error } = await supabase
-        .from('rooms')
-        .insert({ name: name.trim(), building: building.trim(), capacity: capInt });
-      if (error) throw error;
-      Alert.alert('Success', 'Classroom room added successfully!');
-      setName('');
-      setBuilding('');
-      setCapacity('');
+      if (editingRoomId) {
+        const { error } = await supabase
+          .from('rooms')
+          .update({ name: name.trim(), building: building.trim(), capacity: capInt })
+          .eq('id', editingRoomId);
+        if (error) throw error;
+        Alert.alert('Success', 'Classroom room updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('rooms')
+          .insert({ name: name.trim(), building: building.trim(), capacity: capInt });
+        if (error) throw error;
+        Alert.alert('Success', 'Classroom room added successfully!');
+      }
+
+      handleCancelEdit();
       fetchRooms();
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to add room');
+      Alert.alert('Error', e.message || 'Failed to save room');
     } finally {
       setSubmitting(false);
     }
@@ -93,6 +116,7 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
                 .eq('id', id);
               if (error) throw error;
               Alert.alert('Success', 'Room deleted');
+              if (editingRoomId === id) handleCancelEdit();
               fetchRooms();
             } catch (e: any) {
               Alert.alert('Error', e.message);
@@ -133,14 +157,16 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
     },
     btnText: {
       color: '#FFFFFF',
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       fontSize: 14,
+      marginTop: -2,
     },
     title: {
       fontSize: 15,
-      fontWeight: 'bold',
+      fontFamily: colors.fontFamilyBold,
       color: colors.textPrimary,
       marginBottom: 12,
+      marginTop: -2,
     }
   });
 
@@ -152,13 +178,13 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
       >
         <ArrowLeft size={16} color={colors.accent} />
-        <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.accent }}>Back to Admin Menu</Text>
+        <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Back to Admin Menu</Text>
       </TouchableOpacity>
 
-      {/* Add Room Form */}
-      <Text style={styles.title}>📍 Create Room / Lab</Text>
+      {/* Add / Edit Room Form */}
+      <Text style={styles.title}>{editingRoomId ? '✏️ Edit Room / Lab' : '📍 Create Room / Lab'}</Text>
       <View style={styles.card}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Room Name / Number</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Room Name / Number</Text>
         <TextInput
           value={name}
           onChangeText={setName}
@@ -166,7 +192,7 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Building / Block</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Building / Block</Text>
         <TextInput
           value={building}
           onChangeText={setBuilding}
@@ -174,7 +200,7 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Seating Capacity (Optional)</Text>
+        <Text style={{ fontSize: 12, fontFamily: colors.fontFamilySemiBold, color: colors.textSecondary, marginBottom: 6, marginTop: -2 }}>Seating Capacity (Optional)</Text>
         <TextInput
           value={capacity}
           onChangeText={setCapacity}
@@ -183,14 +209,21 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
           keyboardType="numeric"
           style={styles.input}
         />
-        <TouchableOpacity onPress={handleAddRoom} disabled={submitting} style={styles.btn}>
-          {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
-            <>
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.btnText}>Add Room</Text>
-            </>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {editingRoomId && (
+            <TouchableOpacity onPress={handleCancelEdit} style={[styles.btn, { backgroundColor: colors.border, flex: 1 }]}>
+              <Text style={[styles.btnText, { color: colors.textPrimary }]}>Cancel</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleSaveRoom} disabled={submitting} style={[styles.btn, { flex: 2 }]}>
+            {submitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : (
+              <>
+                {editingRoomId ? <Pencil size={16} color="#FFFFFF" /> : <Plus size={16} color="#FFFFFF" />}
+                <Text style={styles.btnText}>{editingRoomId ? 'Update Room' : 'Add Room'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Rooms List */}
@@ -199,18 +232,23 @@ export default function ManageRooms({ colors, onBack }: ManageRoomsProps) {
         <ActivityIndicator size="small" color={colors.accent} />
       ) : rooms.length === 0 ? (
         <View style={styles.card}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center' }}>No rooms configured yet.</Text>
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, textAlign: 'center', marginTop: -2 }}>No rooms configured yet.</Text>
         </View>
       ) : (
         rooms.map((room) => (
           <View key={room.id} style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }}>{room.name}</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Building: {room.building} {room.capacity ? `• Capacity: ${room.capacity}` : ''}</Text>
+              <Text style={{ fontSize: 14, fontFamily: colors.fontFamilyBold, color: colors.textPrimary, marginTop: -2 }}>{room.name}</Text>
+              <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>Building: {room.building} {room.capacity ? `• Capacity: ${room.capacity}` : ''}</Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteRoom(room.id, room.name)} style={{ padding: 6 }}>
-              <Trash2 size={16} color={colors.danger} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <TouchableOpacity onPress={() => handleStartEdit(room)} style={{ padding: 6 }}>
+                <Pencil size={16} color={colors.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteRoom(room.id, room.name)} style={{ padding: 6 }}>
+                <Trash2 size={16} color={colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
