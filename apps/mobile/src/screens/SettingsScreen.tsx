@@ -7,7 +7,8 @@ import {
   Modal,
   ScrollView,
   TouchableWithoutFeedback,
-  TextInput
+  TextInput,
+  Linking
 } from 'react-native';
 import { Class } from '@flowtime/types';
 import {
@@ -22,7 +23,10 @@ import {
   LogOut,
   Bell,
   Check,
-  PenLineIcon
+  PenLineIcon,
+  Info,
+  Instagram,
+  ExternalLink
 } from 'lucide-react-native';
 
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -348,6 +352,47 @@ export default function SettingsScreen({
         </TouchableOpacity>
       </View>
 
+      {/* ABOUT Section */}
+      <Text style={styles.title}>ABOUT</Text>
+      <View style={styles.card}>
+        {/* Version Info Row */}
+        <View style={styles.row}>
+          <View style={styles.rowLeft}>
+            <View style={styles.iconWrapper}>
+              <Info size={16} color={colors.textSecondary} />
+            </View>
+            <View style={{ gap: 2 }}>
+              <Text style={[styles.rowLabel, { marginTop: -2 }]}>App Version</Text>
+              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary, fontFamily: colors.fontFamily, marginTop: -2 }]}>
+                v1.2 (Build 2 • arm64-v8a)
+              </Text>
+            </View>
+          </View>
+          <View style={{ backgroundColor: colors.accentSoft, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+            <Text style={{ fontSize: 11, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>Latest</Text>
+          </View>
+        </View>
+
+        {/* Developer / Instagram Link Row */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://instagram.com/rntxpurval')}
+          style={[styles.row, { borderBottomWidth: 0, alignItems: 'center' }]}
+        >
+          <View style={styles.rowLeft}>
+            <View style={[styles.iconWrapper, { backgroundColor: colors.accentSoft }]}>
+              <Instagram size={16} color={colors.accent} />
+            </View>
+            <View style={{ gap: 2 }}>
+              <Text style={[styles.rowLabel, { marginTop: -2 }]}>Developer</Text>
+              <Text style={[styles.rowValue, { fontSize: 12, color: colors.textSecondary, fontFamily: colors.fontFamily, marginTop: -2 }]}>
+                @rntxpurval (Purval)
+              </Text>
+            </View>
+          </View>
+          <ExternalLink size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+
       {/* Logout Row at Bottom */}
       <TouchableOpacity
         onPress={() => handleClassChange('')}
@@ -362,11 +407,28 @@ export default function SettingsScreen({
           flexDirection: 'row',
           gap: 8,
           marginTop: 8,
+          marginBottom: 16,
         }}
       >
         <LogOut size={16} color="#DC2626" />
         <Text style={{ color: '#DC2626', fontFamily: colors.fontFamilyBold, fontSize: 14, marginTop: -2 }}>Reset / Logout</Text>
       </TouchableOpacity>
+
+      {/* Footer Branding matching Website */}
+      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 8 }}>
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://instagram.com/rntxpurval')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+        >
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamily, color: colors.textSecondary, marginTop: -2 }}>
+            Made with ❤️ by
+          </Text>
+          <Instagram size={13} color={colors.accent} />
+          <Text style={{ fontSize: 12, fontFamily: colors.fontFamilyBold, color: colors.accent, marginTop: -2 }}>
+            Purval
+          </Text>
+        </TouchableOpacity>
+      </View>
       
       {/* User Name Modal */}
       <Modal
