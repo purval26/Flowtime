@@ -10,6 +10,7 @@ build/
 out/
 .expo/
 *.apk
+!apps/web/public/*.apk
 *.ipa
 *.app
 *.d.ts
